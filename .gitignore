@@ -25,3 +25,7 @@ logs
 
 /prisma/generated
 /dev.db
+
+# SQLite WAL sidecar files (created by journal_mode = WAL)
+/dev.db-wal
+/dev.db-shm

@@ -5,6 +5,9 @@ import * as schema from './schema'
 
 const connectionString = process.env.DATABASE_URL!.replace('file:', '')
 const sqlite = new Database(connectionString)
+// Separate connection from server/utils/db.ts, so it needs the pragma too —
+// otherwise seeded rows can reference records that do not exist.
+sqlite.pragma('foreign_keys = ON')
 const db = drizzle(sqlite, { schema })
 
 async function main() {
