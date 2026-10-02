@@ -15,6 +15,13 @@
       "when": 1790055000161,
       "tag": "0001_eager_dracula",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1790888389295,
+      "tag": "0002_quick_psylocke",
+      "breakpoints": true
     }
   ]
 }

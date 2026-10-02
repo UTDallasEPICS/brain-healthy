@@ -6,6 +6,9 @@
 // `admin` plugin (see node_modules/better-auth/dist/plugins/admin/admin.d.mts).
 // Every one of them is optional in the plugin's own schema, so every one is
 // nullable here. They are what lets the app tell a student from a reviewer.
+//
+// Sign-in is email + password (Better Auth's credential provider): the hashed
+// password lives in account.password on the row with providerId 'credential'.
 
 import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core'
 import { createSelectSchema, createInsertSchema } from 'drizzle-zod'
@@ -104,6 +107,21 @@ export const verification = sqliteTable(
   (table) => [index('verification_identifier_idx').on(table.identifier)]
 )
 
+// jwt plugin (see node_modules/better-auth/dist/plugins/jwt/schema.mjs). Holds
+// the key pairs JWTs are signed with; the private key is encrypted with
+// BETTER_AUTH_SECRET. The plugin creates the first key on demand.
+export const jwks = sqliteTable('jwks', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  publicKey: text('publicKey').notNull(),
+  privateKey: text('privateKey').notNull(),
+  createdAt: integer('createdAt', { mode: 'timestamp' })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  expiresAt: integer('expiresAt', { mode: 'timestamp' }),
+})
+
 export const sessionRelations = relations(session, ({ one }) => ({
   user: one(user, { fields: [session.userId], references: [user.id] }),
 }))
@@ -120,3 +138,5 @@ export const selectAccountSchema = createSelectSchema(account)
 export const insertAccountSchema = createInsertSchema(account)
 export const selectVerificationSchema = createSelectSchema(verification)
 export const insertVerificationSchema = createInsertSchema(verification)
+export const selectJwksSchema = createSelectSchema(jwks)
+export const insertJwksSchema = createInsertSchema(jwks)
