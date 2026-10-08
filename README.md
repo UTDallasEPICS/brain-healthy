@@ -80,17 +80,20 @@ Your application will be available at `http://localhost:3000`.
 
 ### 6. How to Login
 
-Login requires an email address that already exists in the database.
+Accounts use an email and password, and only `@utdallas.edu` addresses can sign up.
 
-- **Option A: Use the seeded user**
-  Go to `/auth` and log in with `email@example.com`.
-- **Option B: Use your own email**
-  Update `server/db/seed.ts` with your email, then run `pnpm db:seed` to re-seed.
+- **Option A: Sign up**
+  Go to `/auth`, choose **Sign up**, and enter your name, UTD email, and a password (8+ characters).
+  Open the verification link emailed to you; it signs you in. Until you verify, login is refused
+  and a fresh link is sent each time you try.
+  No inbox access? Run `pnpm db:studio` and set `emailVerified` on your row in the `user` table.
+- **Option B: Use the seeded user**
+  Set `SEED_USER_PASSWORD` in `.env`, run `pnpm db:seed`, then log in as
+  `seeded-user@utdallas.edu` with that password.
 
-**To get your OTP:**
-
-- Check your configured email inbox.
-- **Or**, run `pnpm db:studio` to open **Drizzle Studio** and look in the `verification` table.
+**JWTs for API clients:** the app itself uses a session cookie. Any other client can get a
+short-lived (15 min) JWT from `GET /api/auth/token` while signed in, and call the API with
+`Authorization: Bearer <jwt>`. Signing keys are published at `/api/auth/jwks`.
 
 ## Project Structure
 
