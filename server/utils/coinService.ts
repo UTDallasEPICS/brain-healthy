@@ -11,6 +11,14 @@ export interface AwardCoinsInput {
   rewardRuleId?: string
 }
 
+export interface SpendCoinsInput {
+  userId: string
+  // Positive; stored as a negative amount.
+  amount: number
+  // purchase:<userItemId>
+  sourceKey: string
+}
+
 // Callers always pass a positive whole number; the sign comes from award vs spend.
 function assertPositiveInteger(amount: number) {
   if (!Number.isSafeInteger(amount) || amount <= 0) {
@@ -56,6 +64,38 @@ export function awardCoins(input: AwardCoinsInput) {
   } catch (err) {
     if (isDuplicateSourceKey(err)) {
       throw createError({ statusCode: 409, statusMessage: 'Already awarded' })
+    }
+    throw err
+  }
+}
+
+// Records a spend. The balance check and the debit share one transaction, so two
+// concurrent spends can't both see the old balance (plan §7.2). The callback must
+// stay synchronous — no async/await inside db.transaction (plan §4.1).
+export function spendCoins({ userId, amount, sourceKey }: SpendCoinsInput) {
+  assertPositiveInteger(amount)
+
+  try {
+    return db.transaction((tx) => {
+      const row = tx
+        .select({ balance: sql<number>`coalesce(sum(${coinTransactions.amount}), 0)` })
+        .from(coinTransactions)
+        .where(eq(coinTransactions.userId, userId))
+        .get()
+
+      if ((row?.balance ?? 0) < amount) {
+        throw createError({ statusCode: 409, statusMessage: 'Insufficient coins' })
+      }
+
+      return tx
+        .insert(coinTransactions)
+        .values({ userId, amount: -amount, transactionType: 'purchase', sourceKey })
+        .returning()
+        .get()
+    })
+  } catch (err) {
+    if (isDuplicateSourceKey(err)) {
+      throw createError({ statusCode: 409, statusMessage: 'Already recorded' })
     }
     throw err
   }
