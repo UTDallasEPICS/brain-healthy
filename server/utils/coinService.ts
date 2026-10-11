@@ -1,4 +1,4 @@
-import { eq, sql } from 'drizzle-orm'
+import { desc, eq, sql } from 'drizzle-orm'
 import { db } from '~~/server/utils/db'
 import { coinTransactions } from '~~/server/db/schema'
 
@@ -11,4 +11,15 @@ export function getCoinBalance(userId: string) {
     .get()
 
   return row?.balance ?? 0
+}
+
+// Newest first. created_at only has one-second precision, so rowid (insertion
+// order) breaks ties between rows written in the same second.
+export function getCoinTransactions(userId: string) {
+  return db
+    .select()
+    .from(coinTransactions)
+    .where(eq(coinTransactions.userId, userId))
+    .orderBy(desc(coinTransactions.createdAt), sql`rowid desc`)
+    .all()
 }
