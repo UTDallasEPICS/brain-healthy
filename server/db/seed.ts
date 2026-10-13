@@ -63,10 +63,65 @@ async function seedUser() {
   console.log({ user: created })
 }
 
+
+const SAMPLE_QUESTS = [
+  {
+    title: 'Drink 8 glasses of water',
+    description: 'Stay hydrated: drink at least 8 glasses of water today.',
+    recurrence: 'daily',
+  },
+  {
+    title: 'Limit screen time',
+    description: 'Keep your non-school screen time under 2 hours today.',
+    recurrence: 'daily',
+  },
+  {
+    title: 'Complete a stress check-in',
+    description: 'Take a minute to check in on how stressed you are feeling today.',
+    recurrence: 'daily',
+  },
+] as const
+
+async function seedQuests() {
+
+  db.insert(schema.rewardRules)
+    .values({ actionCode: 'QUEST_COMPLETE', coinAmount: 10 })
+    .onConflictDoNothing({ target: schema.rewardRules.actionCode })
+    .run()
+
+  const rule = await db.query.rewardRules.findFirst({
+    where: (r, { eq }) => eq(r.actionCode, 'QUEST_COMPLETE'),
+  })
+
+  if (!rule) {
+    throw new Error('QUEST_COMPLETE reward rule is missing')
+  }
+
+  for (const quest of SAMPLE_QUESTS) {
+    const existing = await db.query.activities.findFirst({
+      where: (a, { and, eq }) => and(eq(a.title, quest.title), eq(a.activityType, 'quest')),
+    })
+
+    if (existing) continue
+
+    db.insert(schema.activities)
+      .values({
+        ...quest,
+        rewardRuleId: rule.id,
+        activityType: 'quest',
+        evidenceType: 'self_report',
+      })
+      .run()
+  }
+
+  console.log(`Sample quests ready (${SAMPLE_QUESTS.length}).`)
+}
+
 async function main() {
   console.log('Start seeding...')
 
   await seedUser()
+  await seedQuests()
 
   console.log('Seeding finished.')
 }
