@@ -1,6 +1,13 @@
 import { getQuestById } from '../../utils/questService'
 
-export default defineEventHandler((event) => {
+export default defineEventHandler(async (event) => {
+  if (!event.context.user) {
+    throw createError({
+      statusCode: 401,
+      statusMessage: 'Unauthorized',
+    })
+  }
+
   const id = getRouterParam(event, 'id')
 
   if (!id) {
@@ -10,7 +17,7 @@ export default defineEventHandler((event) => {
     })
   }
 
-  const quest = getQuestById(id)
+  const quest = await getQuestById(id)
 
   if (!quest) {
     throw createError({
