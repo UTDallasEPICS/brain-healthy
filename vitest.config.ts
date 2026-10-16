@@ -6,7 +6,7 @@ import { defineVitestConfig } from '@nuxt/test-utils/config'
 export default defineVitestConfig({
   test: {
     environment: 'nuxt',
-    include: ['tests/nuxt/**/*.test.ts'],
+    include: ['tests/**/*.test.ts'],
     // Fail the run if no tests are found, so an empty/broken suite can never
     // pass silently in a merge request.
     passWithNoTests: false,

@@ -11,14 +11,14 @@ async function main() {
   console.log('Start seeding...')
 
   const existingUser = await db.query.user.findFirst({
-    where: (user, { eq }) => eq(user.email, 'seeded-user@email.com'),
+    where: (user, { eq }) => eq(user.email, 'sudiksad23@gmail.com'),
   })
 
   if (!existingUser) {
     const [created] = await db
       .insert(schema.user)
       .values({
-        email: 'seeded-user@email.com',
+        email: 'sudiksad23@mgmail.com',
         name: 'Sample Seeded User',
       })
       .returning()

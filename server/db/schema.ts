@@ -75,3 +75,6 @@ export const selectAccountSchema = createSelectSchema(account)
 export const insertAccountSchema = createInsertSchema(account)
 export const selectVerificationSchema = createSelectSchema(verification)
 export const insertVerificationSchema = createInsertSchema(verification)
+
+export { coinTransaction, rewardActivityTypes, rewardConfiguration } from './schema/economy'
+export type { RewardActivityType } from './schema/economy'
