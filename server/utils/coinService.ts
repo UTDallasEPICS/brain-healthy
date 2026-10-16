@@ -1,38 +1,38 @@
 import { eq, sql } from 'drizzle-orm'
-import { coinTransaction } from '../db/schema/economy'
+import { coinTransactions, type TRANSACTION_TYPES } from '../db/schema/economy'
 import { db } from './db'
 
+type TransactionType = (typeof TRANSACTION_TYPES)[number]
 export type CoinWriter = Pick<typeof db, 'insert'>
 
-/** Add an earning row once for a given reason/reference pair. */
+/** Append one ledger entry for a source; the unique source key makes retries safe. */
 export function awardCoins(
   userId: string,
   amount: number,
-  reason: string,
-  referenceId: string,
+  rewardRuleId: string,
+  sourceKey: string,
+  transactionType: TransactionType,
   writer: CoinWriter = db
 ): boolean {
-  if (!Number.isSafeInteger(amount) || amount <= 0) {
-    throw new Error('Coin award amount must be a positive integer.')
+  if (!Number.isSafeInteger(amount) || amount < 0) {
+    throw new Error('Coin award amount must be a non-negative integer.')
   }
 
   const result = writer
-    .insert(coinTransaction)
-    .values({ userId, amount, type: 'earn', reason, referenceId })
+    .insert(coinTransactions)
+    .values({ userId, amount, rewardRuleId, sourceKey, transactionType })
     .onConflictDoNothing()
     .run()
 
   return result.changes > 0
 }
 
-/** Return the user's earned coins minus coins spent. */
+/** Return the user's ledger balance. Earnings are positive; purchases are negative. */
 export function getCoinBalance(userId: string): number {
   const [result] = db
-    .select({
-      balance: sql<number>`coalesce(sum(case when ${coinTransaction.type} = 'spend' then -${coinTransaction.amount} else ${coinTransaction.amount} end), 0)`,
-    })
-    .from(coinTransaction)
-    .where(eq(coinTransaction.userId, userId))
+    .select({ balance: sql<number>`coalesce(sum(${coinTransactions.amount}), 0)` })
+    .from(coinTransactions)
+    .where(eq(coinTransactions.userId, userId))
     .all()
 
   return result?.balance ?? 0

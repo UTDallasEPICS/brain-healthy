@@ -1,6 +1,11 @@
-import { relations } from 'drizzle-orm'
-import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
-import { user } from '../schema'
+// The append-only coin ledger. Reward amounts and action codes live in
+// reward_rules (activities.ts); each movement records the amount actually used.
+
+import { relations, sql } from 'drizzle-orm'
+import { sqliteTable, text, integer, index, check } from 'drizzle-orm/sqlite-core'
+import { createSelectSchema, createInsertSchema } from 'drizzle-zod'
+import { user } from './auth'
+import { rewardRules } from './activities'
 
 export const rewardActivityTypes = [
   'individual_quest_completion',
@@ -11,41 +16,44 @@ export const rewardActivityTypes = [
 
 export type RewardActivityType = (typeof rewardActivityTypes)[number]
 
-export const rewardConfiguration = sqliteTable('reward_configuration', {
-  activityType: text('activityType').primaryKey(),
-  coinAmount: integer('coinAmount').notNull(),
-  updatedAt: integer('updatedAt', { mode: 'timestamp' })
-    .notNull()
-    .$defaultFn(() => new Date()),
-})
+export const TRANSACTION_TYPES = ['activity_reward', 'referral_reward', 'purchase'] as const
 
-export const coinTransaction = sqliteTable(
-  'coin_transaction',
+export const coinTransactions = sqliteTable(
+  'coin_transactions',
   {
     id: text('id')
       .primaryKey()
       .$defaultFn(() => crypto.randomUUID()),
-    userId: text('userId')
+    userId: text('user_id')
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
+    rewardRuleId: text('reward_rule_id').references(() => rewardRules.id, {
+      onDelete: 'set null',
+    }),
     amount: integer('amount').notNull(),
-    type: text('type', { enum: ['earn', 'spend'] }).notNull(),
-    reason: text('reason').notNull(),
-    referenceId: text('referenceId'),
-    createdAt: integer('createdAt', { mode: 'timestamp' })
+    transactionType: text('transaction_type', { enum: TRANSACTION_TYPES }).notNull(),
+    sourceKey: text('source_key').notNull().unique(),
+    createdAt: integer('created_at', { mode: 'timestamp' })
       .notNull()
       .$defaultFn(() => new Date()),
   },
-  (table) => [
-    uniqueIndex('coin_transaction_activity_unique').on(
-      table.userId,
-      table.reason,
-      table.referenceId
+  (t) => [
+    index('coin_transactions_user_idx').on(t.userId, t.createdAt),
+    index('coin_transactions_rule_idx').on(t.rewardRuleId),
+    check(
+      'coin_transactions_type_check',
+      sql`transaction_type in ('activity_reward', 'referral_reward', 'purchase')`
     ),
-    index('coin_transaction_user_created_idx').on(table.userId, table.createdAt),
   ]
 )
 
-export const coinTransactionRelations = relations(coinTransaction, ({ one }) => ({
-  user: one(user, { fields: [coinTransaction.userId], references: [user.id] }),
+export const coinTransactionsRelations = relations(coinTransactions, ({ one }) => ({
+  user: one(user, { fields: [coinTransactions.userId], references: [user.id] }),
+  rewardRule: one(rewardRules, {
+    fields: [coinTransactions.rewardRuleId],
+    references: [rewardRules.id],
+  }),
 }))
+
+export const selectCoinTransactionSchema = createSelectSchema(coinTransactions)
+export const insertCoinTransactionSchema = createInsertSchema(coinTransactions)

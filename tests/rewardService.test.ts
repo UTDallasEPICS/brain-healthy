@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { eq } from 'drizzle-orm'
-import { rewardConfiguration } from '../server/db/schema/economy'
-import { user } from '../server/db/schema'
+import { coinTransactions } from '../server/db/schema/economy'
+import { rewardRules, user } from '../server/db/schema'
 import { db } from '../server/utils/db'
 import {
   getRewardAmount,
@@ -18,7 +18,8 @@ vi.mock('../server/utils/db', async () => {
   sqlite.pragma('foreign_keys = ON')
   for (const migrationFile of [
     'drizzle/0000_classy_bloodstorm.sql',
-    'drizzle/0001_reward_system.sql',
+    'drizzle/0001_eager_dracula.sql',
+    'drizzle/0002_quick_psylocke.sql',
   ]) {
     const migration = readFileSync(`${process.cwd()}/${migrationFile}`, 'utf8')
     for (const statement of migration.split('--> statement-breakpoint')) {
@@ -30,18 +31,19 @@ vi.mock('../server/utils/db', async () => {
 })
 
 const defaults = [
-  { activityType: 'individual_quest_completion', coinAmount: 1 },
-  { activityType: 'qr_event_check_in', coinAmount: 5 },
-  { activityType: 'social_engagement', coinAmount: 5 },
-  { activityType: 'verified_friend_referral', coinAmount: 30 },
+  { actionCode: 'QUEST_COMPLETE', coinAmount: 1, enabled: true },
+  { actionCode: 'EVENT_PARTICIPATION', coinAmount: 5, enabled: true },
+  { actionCode: 'SOCIAL_NUDGE', coinAmount: 5, enabled: false },
+  { actionCode: 'VERIFIED_REFERRAL', coinAmount: 30, enabled: true },
 ] as const
 
 describe('rewardService', () => {
   beforeEach(() => {
-    db.delete(rewardConfiguration).run()
+    db.delete(coinTransactions).run()
+    db.delete(rewardRules).run()
     db.delete(user).run()
     db.insert(user).values({ id: 'user-1', name: 'Test User', email: 'user@example.com' }).run()
-    db.insert(rewardConfiguration)
+    db.insert(rewardRules)
       .values([...defaults])
       .run()
   })
@@ -55,9 +57,9 @@ describe('rewardService', () => {
       { activityType: 'verified_friend_referral', coinAmount: 30 },
     ])
 
-    db.update(rewardConfiguration)
+    db.update(rewardRules)
       .set({ coinAmount: 9 })
-      .where(eq(rewardConfiguration.activityType, 'individual_quest_completion'))
+      .where(eq(rewardRules.actionCode, 'QUEST_COMPLETE'))
       .run()
 
     expect(getRewardAmount('individual_quest_completion')).toBe(9)
