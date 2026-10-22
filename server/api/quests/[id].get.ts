@@ -1,12 +1,8 @@
-import { getQuestById } from '../../utils/questService'
+import { getQuestById } from '~~/server/utils/questService'
+import { requireUser } from '~~/server/utils/session'
 
 export default defineEventHandler(async (event) => {
-  if (!event.context.user) {
-    throw createError({
-      statusCode: 401,
-      statusMessage: 'Unauthorized',
-    })
-  }
+  requireUser(event)
 
   const id = getRouterParam(event, 'id')
 

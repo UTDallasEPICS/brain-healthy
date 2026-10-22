@@ -1,14 +1,7 @@
-import { getQuestHistory } from '../../utils/questService'
+import { getQuestHistory } from '~~/server/utils/questService'
+import { requireUser } from '~~/server/utils/session'
 
 export default defineEventHandler(async (event) => {
-  const user = event.context.user
-
-  if (!user) {
-    throw createError({
-      statusCode: 401,
-      statusMessage: 'Unauthorized',
-    })
-  }
-
+  const user = requireUser(event)
   return await getQuestHistory(user.id)
 })

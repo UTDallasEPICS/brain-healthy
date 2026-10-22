@@ -1,9 +1,7 @@
 import { getAvailableQuests } from '~~/server/utils/questService'
+import { requireUser } from '~~/server/utils/session'
 
 export default defineEventHandler(async (event) => {
-  const user = event.context.user
-  if (!user) {
-    throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
-  }
+  const user = requireUser(event)
   return getAvailableQuests(user.id)
 })
