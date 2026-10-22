@@ -16,6 +16,19 @@ const db = drizzle(sqlite, { schema })
 // run the seed against stage/prod too — no environment gets a known password.
 const SEED_USER_EMAIL = 'seeded-user@utdallas.edu'
 
+const REWARD_RULE_SEEDS = [
+  { actionCode: 'QUEST_COMPLETE', coinAmount: 1, enabled: true },
+  { actionCode: 'EVENT_PARTICIPATION', coinAmount: 5, enabled: true },
+  { actionCode: 'SOCIAL_NUDGE', coinAmount: 5, enabled: false },
+  { actionCode: 'VERIFIED_REFERRAL', coinAmount: 30, enabled: true },
+] as const
+
+function seedRewardRules() {
+  for (const rule of REWARD_RULE_SEEDS) {
+    db.insert(schema.rewardRules).values(rule).onConflictDoNothing().run()
+  }
+}
+
 async function seedUser() {
   const password = process.env.SEED_USER_PASSWORD
 
@@ -120,6 +133,7 @@ async function seedQuests() {
 async function main() {
   console.log('Start seeding...')
 
+  seedRewardRules()
   await seedUser()
   await seedQuests()
 

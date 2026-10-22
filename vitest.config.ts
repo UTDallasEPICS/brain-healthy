@@ -8,7 +8,7 @@ export default defineVitestConfig({
     environment: 'nuxt',
     // tests/server/** opt into the plain `node` environment per file — they
     // exercise server code and never render a component.
-    include: ['tests/nuxt/**/*.test.ts', 'tests/server/**/*.test.ts'],
+    include: ['tests/**/*.test.ts'],
     // Fail the run if no tests are found, so an empty/broken suite can never
     // pass silently in a merge request.
     passWithNoTests: false,
