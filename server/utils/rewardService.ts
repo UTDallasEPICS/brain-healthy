@@ -47,69 +47,86 @@ export function getRewardConfigurations() {
   })
 }
 
+export type RewardTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
+
+/**
+ * Pass `tx` to award inside a caller's transaction (e.g. alongside a quest
+ * submission) so both writes commit or roll back together.
+ */
 export function grantActivityReward(
   userId: string,
   activityType: RewardActivityType,
-  referenceId: string
+  referenceId: string,
+  tx?: RewardTransaction
 ): { awarded: boolean; amount: number } {
   if (!referenceId.trim()) {
     throw createError({ statusCode: 400, statusMessage: 'A referenceId is required' })
   }
 
+  if (tx) {
+    return grantInTransaction(tx, userId, activityType, referenceId)
+  }
+
+  return db.transaction((newTx) => grantInTransaction(newTx, userId, activityType, referenceId), {
+    behavior: 'immediate',
+  })
+}
+
+function grantInTransaction(
+  tx: RewardTransaction,
+  userId: string,
+  activityType: RewardActivityType,
+  referenceId: string
+): { awarded: boolean; amount: number } {
   const actionCode = ACTION_CODE_BY_ACTIVITY[activityType]
-  return db.transaction(
-    (tx) => {
-      const rule = tx
-        .select({
-          id: rewardRules.id,
-          coinAmount: rewardRules.coinAmount,
-          enabled: rewardRules.enabled,
-        })
-        .from(rewardRules)
-        .where(eq(rewardRules.actionCode, actionCode))
-        .get()
+  const rule = tx
+    .select({
+      id: rewardRules.id,
+      coinAmount: rewardRules.coinAmount,
+      enabled: rewardRules.enabled,
+    })
+    .from(rewardRules)
+    .where(eq(rewardRules.actionCode, actionCode))
+    .get()
 
-      if (!rule || !rule.enabled) {
-        throw createError({ statusCode: 404, statusMessage: 'Reward configuration not found' })
-      }
+  if (!rule || !rule.enabled) {
+    throw createError({ statusCode: 404, statusMessage: 'Reward configuration not found' })
+  }
 
-      if (activityType === 'verified_friend_referral') {
-        const verifiedFriend = tx
-          .select({ id: user.id })
-          .from(user)
-          .where(and(eq(user.id, referenceId), eq(user.emailVerified, true)))
-          .get()
+  if (activityType === 'verified_friend_referral') {
+    const verifiedFriend = tx
+      .select({ id: user.id })
+      .from(user)
+      .where(and(eq(user.id, referenceId), eq(user.emailVerified, true)))
+      .get()
 
-        if (!verifiedFriend || referenceId === userId) {
-          throw createError({
-            statusCode: 400,
-            statusMessage: 'Referral rewards require a different, verified user',
-          })
-        }
+    if (!verifiedFriend || referenceId === userId) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Referral rewards require a different, verified user',
+      })
+    }
 
-        const [referralCount] = tx
-          .select({ value: count() })
-          .from(coinTransactions)
-          .where(
-            and(
-              eq(coinTransactions.userId, userId),
-              eq(coinTransactions.transactionType, 'referral_reward')
-            )
-          )
-          .all()
+    const [referralCount] = tx
+      .select({ value: count() })
+      .from(coinTransactions)
+      .where(
+        and(
+          eq(coinTransactions.userId, userId),
+          eq(coinTransactions.transactionType, 'referral_reward')
+        )
+      )
+      .all()
 
-        if ((referralCount?.value ?? 0) >= MAX_REWARDED_REFERRALS) {
-          return { awarded: false, amount: 0 }
-        }
-      }
+    if ((referralCount?.value ?? 0) >= MAX_REWARDED_REFERRALS) {
+      return { awarded: false, amount: 0 }
+    }
+  }
 
-      const sourceKey = `reward:${activityType}:${referenceId}`
-      const transactionType =
-        activityType === 'verified_friend_referral' ? 'referral_reward' : 'activity_reward'
-      const awarded = awardCoins(userId, rule.coinAmount, rule.id, sourceKey, transactionType, tx)
+  const sourceKey = `reward:${activityType}:${referenceId}`
+  const transactionType =
+    activityType === 'verified_friend_referral' ? 'referral_reward' : 'activity_reward'
+  const awarded = awardCoins(userId, rule.coinAmount, rule.id, sourceKey, transactionType, tx)
 
-      return { awarded, amount: awarded ? rule.coinAmount : 0 }
-    },
-    { behavior: 'immediate' }
-  )
+  return { awarded, amount: awarded ? rule.coinAmount : 0 }
 }
