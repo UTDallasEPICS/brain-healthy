@@ -159,4 +159,9 @@ ALTER TABLE `session` ADD `impersonatedBy` text;--> statement-breakpoint
 ALTER TABLE `user` ADD `role` text DEFAULT 'user';--> statement-breakpoint
 ALTER TABLE `user` ADD `banned` integer DEFAULT false;--> statement-breakpoint
 ALTER TABLE `user` ADD `banReason` text;--> statement-breakpoint
-ALTER TABLE `user` ADD `banExpires` integer;
+ALTER TABLE `user` ADD `banExpires` integer;--> statement-breakpoint
+INSERT INTO `reward_rules` (`id`, `action_code`, `coin_amount`, `enabled`) VALUES
+	('seed-rule-quest-complete', 'QUEST_COMPLETE', 1, true),
+	('seed-rule-event-participation', 'EVENT_PARTICIPATION', 5, true),
+	('seed-rule-social-nudge', 'SOCIAL_NUDGE', 5, false),
+	('seed-rule-verified-referral', 'VERIFIED_REFERRAL', 30, true);

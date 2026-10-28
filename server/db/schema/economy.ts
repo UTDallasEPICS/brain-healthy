@@ -1,28 +1,23 @@
-// The coin ledger. Snake_case columns; see the note at the top of auth.ts.
+// The append-only coin ledger. Reward amounts and action codes live in
+// reward_rules (activities.ts); each movement records the amount actually used.
 
+import { relations, sql } from 'drizzle-orm'
 import { sqliteTable, text, integer, index, check } from 'drizzle-orm/sqlite-core'
 import { createSelectSchema, createInsertSchema } from 'drizzle-zod'
-import { relations, sql } from 'drizzle-orm'
 import { user } from './auth'
 import { rewardRules } from './activities'
 
+export const rewardActivityTypes = [
+  'individual_quest_completion',
+  'qr_event_check_in',
+  'social_engagement',
+  'verified_friend_referral',
+] as const
+
+export type RewardActivityType = (typeof rewardActivityTypes)[number]
+
 export const TRANSACTION_TYPES = ['activity_reward', 'referral_reward', 'purchase'] as const
 
-/**
- * Append-only history of every coin movement. A student's balance is
- * SUM(amount) over their rows — earnings positive, spending negative.
- *
- * `source_key` is the idempotency guard and the single most important column
- * here: its unique index is what makes "the same submission cannot pay twice"
- * true even if the calling code is wrong. Format:
- *
- *   submission:<submissionId>   an approved activity
- *   referral:<referralId>       a qualifying referral
- *   purchase:<userItemId>       a shop purchase (amount is negative)
- *
- * `amount` stores what was actually awarded, so editing a reward rule later
- * never rewrites past transactions.
- */
 export const coinTransactions = sqliteTable(
   'coin_transactions',
   {
@@ -43,16 +38,12 @@ export const coinTransactions = sqliteTable(
       .$defaultFn(() => new Date()),
   },
   (t) => [
-    // Every balance lookup and ledger page is scoped to one user.
     index('coin_transactions_user_idx').on(t.userId, t.createdAt),
     index('coin_transactions_rule_idx').on(t.rewardRuleId),
     check(
       'coin_transactions_type_check',
       sql`transaction_type in ('activity_reward', 'referral_reward', 'purchase')`
     ),
-    // Deliberately no `amount <> 0` constraint: reward_rules permits a
-    // coin_amount of 0, so a rule tuned to zero must still be able to record
-    // that an action happened.
   ]
 )
 

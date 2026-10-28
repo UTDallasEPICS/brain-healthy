@@ -55,12 +55,14 @@ export function getCoinTransactions(userId: string) {
     .all()
 }
 
+export type CoinWriter = Pick<typeof db, 'insert'>
+
 // Records an earning. Throws 409 if this sourceKey was already used.
-export function awardCoins(input: AwardCoinsInput) {
+export function awardCoins(input: AwardCoinsInput, writer: CoinWriter = db) {
   assertPositiveInteger(input.amount)
 
   try {
-    return db.insert(coinTransactions).values(input).returning().get()
+    return writer.insert(coinTransactions).values(input).returning().get()
   } catch (err) {
     if (isDuplicateSourceKey(err)) {
       throw createError({ statusCode: 409, statusMessage: 'Already awarded' })
