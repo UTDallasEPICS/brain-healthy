@@ -1,5 +1,6 @@
 <script setup lang="ts">
   const colorMode = useColorMode()
+  const isDev = import.meta.dev
 
   const isDark = computed({
     get() {
@@ -26,6 +27,15 @@
           </NuxtLink>
 
           <div class="flex items-center gap-2">
+            <!-- Dev-only test console for coins, rewards, and quests. -->
+            <UButton
+              v-if="isDev"
+              to="/dev/economy"
+              icon="i-heroicons-beaker"
+              color="neutral"
+              variant="ghost"
+              label="Test console"
+            />
             <UButton
               :icon="isDark ? 'i-heroicons-moon-20-solid' : 'i-heroicons-sun-20-solid'"
               color="neutral"

@@ -23,7 +23,7 @@ export const REWARD_ACTION_CODES = [
 
 export const ACTIVITY_TYPES = ['quest', 'event'] as const
 export const EVIDENCE_TYPES = ['self_report', 'photo'] as const
-export const RECURRENCES = ['daily', 'once'] as const
+export const RECURRENCES = ['daily', 'weekly', 'once'] as const
 export const SUBMISSION_STATUSES = ['pending', 'approved', 'rejected'] as const
 
 /**
@@ -48,8 +48,9 @@ export const rewardRules = sqliteTable(
 /**
  * A quest or campus event a student can complete.
  *
- * `recurrence` decides how submissions.period_key is built: 'daily' uses the
- * campus-local date, 'once' uses the literal string 'once'.
+ * `recurrence` decides how submissions.period_key is built — see
+ * server/utils/period.ts: 'daily' uses the campus-local date, 'weekly' the
+ * campus-local ISO week, and 'once' the literal string 'once'.
  */
 export const activities = sqliteTable(
   'activities',
@@ -76,7 +77,7 @@ export const activities = sqliteTable(
     index('activities_reward_rule_idx').on(t.rewardRuleId),
     check('activities_type_check', sql`activity_type in ('quest', 'event')`),
     check('activities_evidence_check', sql`evidence_type in ('self_report', 'photo')`),
-    check('activities_recurrence_check', sql`recurrence in ('daily', 'once')`),
+    check('activities_recurrence_check', sql`recurrence in ('daily', 'weekly', 'once')`),
   ]
 )
 
@@ -100,7 +101,8 @@ export const submissions = sqliteTable(
     activityId: text('activity_id')
       .notNull()
       .references(() => activities.id, { onDelete: 'cascade' }),
-    // 'YYYY-MM-DD' in America/Chicago for daily activities, or 'once'.
+    // Built by periodKeyFor (server/utils/period.ts): 'YYYY-MM-DD' (daily) or
+    // 'YYYY-Www' (weekly) in America/Chicago, or 'once'.
     periodKey: text('period_key').notNull(),
     status: text('status', { enum: SUBMISSION_STATUSES }).notNull().default('pending'),
     reviewedBy: text('reviewed_by').references(() => user.id, { onDelete: 'set null' }),

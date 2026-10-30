@@ -2,6 +2,7 @@ import 'dotenv/config'
 import Database from 'better-sqlite3'
 import { drizzle } from 'drizzle-orm/better-sqlite3'
 import { hashPassword } from 'better-auth/crypto'
+import { eq } from 'drizzle-orm'
 import * as schema from './schema'
 
 const connectionString = process.env.DATABASE_URL!.replace('file:', '')
@@ -23,9 +24,68 @@ const REWARD_RULE_SEEDS = [
   { actionCode: 'VERIFIED_REFERRAL', coinAmount: 30, enabled: true },
 ] as const
 
+// Starter wellness quests. Fixed ids keep re-seeding idempotent and let the
+// content be edited in the database without a duplicate appearing next run.
+const QUEST_SEEDS = [
+  {
+    id: 'seed-quest-hydration',
+    title: 'Hydration check-in',
+    description: 'Drink a full glass of water and check in.',
+    recurrence: 'daily',
+  },
+  {
+    id: 'seed-quest-screen-break',
+    title: 'Screen-time break',
+    description: 'Put your phone away for one hour without checking it.',
+    recurrence: 'daily',
+  },
+  {
+    id: 'seed-quest-stress-check-in',
+    title: 'Stress check-in',
+    description: 'Pause, take three slow breaths, and notice how you are feeling today.',
+    recurrence: 'daily',
+  },
+  {
+    id: 'seed-quest-screen-free-evening',
+    title: 'Screen-free evening',
+    description: 'Spend one evening this week without recreational screens.',
+    recurrence: 'weekly',
+  },
+  {
+    id: 'seed-quest-intro-lesson',
+    title: 'Intro to stress quests',
+    description: 'Learn how small daily habits support brain health.',
+    recurrence: 'once',
+  },
+] as const
+
 function seedRewardRules() {
   for (const rule of REWARD_RULE_SEEDS) {
     db.insert(schema.rewardRules).values(rule).onConflictDoNothing().run()
+  }
+}
+
+function seedQuests() {
+  const questRule = db
+    .select({ id: schema.rewardRules.id })
+    .from(schema.rewardRules)
+    .where(eq(schema.rewardRules.actionCode, 'QUEST_COMPLETE'))
+    .get()
+
+  if (!questRule) {
+    throw new Error('QUEST_COMPLETE reward rule is missing; cannot seed quests.')
+  }
+
+  for (const quest of QUEST_SEEDS) {
+    db.insert(schema.activities)
+      .values({
+        ...quest,
+        rewardRuleId: questRule.id,
+        activityType: 'quest',
+        evidenceType: 'self_report',
+      })
+      .onConflictDoNothing()
+      .run()
   }
 }
 
@@ -80,6 +140,7 @@ async function main() {
   console.log('Start seeding...')
 
   seedRewardRules()
+  seedQuests()
   await seedUser()
 
   console.log('Seeding finished.')
