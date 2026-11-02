@@ -1,5 +1,8 @@
+// @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { eq } from 'drizzle-orm'
+import { createError } from 'h3'
+import { getCoinBalance } from '../server/utils/coinService'
 import { coinTransactions } from '../server/db/schema/economy'
 import { rewardRules, user } from '../server/db/schema'
 import { db } from '../server/utils/db'
@@ -8,6 +11,8 @@ import {
   getRewardConfigurations,
   grantActivityReward,
 } from '../server/utils/rewardService'
+
+vi.stubGlobal('createError', createError)
 
 vi.mock('../server/utils/db', async () => {
   const Database = (await import('better-sqlite3')).default
@@ -74,6 +79,31 @@ describe('rewardService', () => {
       awarded: false,
       amount: 0,
     })
+  })
+
+  it('writes a ledger record through the object-based coin service', () => {
+    grantActivityReward('user-1', 'individual_quest_completion', 'quest-1')
+    expect(getCoinBalance('user-1')).toBe(1)
+    const rows = db.select().from(coinTransactions).all()
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toMatchObject({
+      userId: 'user-1',
+      amount: 1,
+      transactionType: 'activity_reward',
+      sourceKey: 'reward:individual_quest_completion:quest-1',
+      rewardRuleId: expect.any(String),
+    })
+  })
+
+  it('does not swallow invalid amounts or write a ledger row', () => {
+    db.update(rewardRules)
+      .set({ coinAmount: 0 })
+      .where(eq(rewardRules.actionCode, 'QUEST_COMPLETE'))
+      .run()
+    expect(() => grantActivityReward('user-1', 'individual_quest_completion', 'bad-quest')).toThrow(
+      'Amount must be a positive whole number'
+    )
+    expect(getCoinBalance('user-1')).toBe(0)
   })
 
   it('limits a user to three rewarded verified referrals', () => {
