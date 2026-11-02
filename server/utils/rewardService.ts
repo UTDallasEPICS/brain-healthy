@@ -106,7 +106,16 @@ export function grantActivityReward(
       const sourceKey = `reward:${activityType}:${referenceId}`
       const transactionType =
         activityType === 'verified_friend_referral' ? 'referral_reward' : 'activity_reward'
-      const awarded = awardCoins(userId, rule.coinAmount, rule.id, sourceKey, transactionType, tx)
+      let awarded = true
+      try {
+        awardCoins(
+          { userId, amount: rule.coinAmount, rewardRuleId: rule.id, sourceKey, transactionType },
+          tx
+        )
+      } catch (err) {
+        if ((err as { statusCode?: number }).statusCode !== 409) throw err
+        awarded = false
+      }
 
       return { awarded, amount: awarded ? rule.coinAmount : 0 }
     },
