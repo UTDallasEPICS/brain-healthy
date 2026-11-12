@@ -23,9 +23,21 @@ const REWARD_RULE_SEEDS = [
   { actionCode: 'VERIFIED_REFERRAL', coinAmount: 30, enabled: true },
 ] as const
 
+const DECORATION_SEEDS = [
+  { id: 'starter-plant', name: 'Sunny Plant', description: 'A cheerful plant for a cozy corner.', category: 'plant', priceCoins: 10, assetKey: 'decor/plant-sunny' },
+  { id: 'starter-lamp', name: 'Reading Lamp', description: 'A warm lamp for your favorite reading spot.', category: 'lighting', priceCoins: 15, assetKey: 'decor/lamp-reading' },
+  { id: 'starter-rug', name: 'Cloud Rug', description: 'A soft rug that makes any room feel welcoming.', category: 'floor', priceCoins: 20, assetKey: 'decor/rug-cloud' },
+] as const
+
 function seedRewardRules() {
   for (const rule of REWARD_RULE_SEEDS) {
     db.insert(schema.rewardRules).values(rule).onConflictDoNothing().run()
+  }
+}
+
+function seedDecorations() {
+  for (const decoration of DECORATION_SEEDS) {
+    db.insert(schema.decorItems).values(decoration).onConflictDoNothing().run()
   }
 }
 
@@ -80,6 +92,7 @@ async function main() {
   console.log('Start seeding...')
 
   seedRewardRules()
+  seedDecorations()
   await seedUser()
 
   console.log('Seeding finished.')

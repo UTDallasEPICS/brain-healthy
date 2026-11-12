@@ -1,197 +1,187 @@
 <script setup lang="ts">
-  import { authClient } from '../utils/auth-client'
-
-  const { data: users, pending, error } = await useFetch('/api/users')
-
-  const selectedFile = ref<File | null>(null)
-  const imagePreview = ref<string>('')
-  const isUploading = ref(false)
-  const isModalOpen = ref(false)
-
-  async function logout() {
-    await authClient.signOut()
-    await navigateTo('/auth', { external: true })
+  type HouseItem = {
+    id: string
+    name: string
+    assetKey: string
+    positionX: number | null
+    positionY: number | null
+    rotation: number | null
   }
-
-  function getImageLink(user: { image: boolean; id: string }) {
-    return user.image ? 'api/users/' + user.id + '/profile' : undefined
+  type House = { name: string; coins: number; decorations: HouseItem[] }
+  type OwnedDecoration = { id: string; name: string; assetKey: string; equipped: boolean }
+  const { data: house, pending, error, refresh: refreshHouse } = await useFetch<House>('/api/house')
+  const { data: inventory, refresh: refreshInventory } = await useFetch<OwnedDecoration[]>(
+    '/api/decorations/inventory'
+  )
+  const placing = ref<string | null>(null)
+  const placementNotice = ref('')
+  const roomElement = ref<HTMLElement | null>(null)
+  const dragging = ref<HouseItem | null>(null)
+  function assetImage(assetKey: string) {
+    const file =
+      assetKey === 'decor/plant-sunny'
+        ? 'plant-sunny'
+        : assetKey === 'decor/lamp-reading'
+          ? 'lamp-reading'
+          : assetKey === 'decor/rug-cloud'
+            ? 'rug-cloud'
+            : 'plant-sunny'
+    return `/decor/${file}.svg`
   }
-
-  function handleImageUpload(event: Event) {
-    const target = event.target as HTMLInputElement
-    const files = target.files as FileList
-
-    if (!files || files.length === 0) return
-
-    const file = files[0]
-
-    if (!file?.type.startsWith('image/')) {
-      return
-    }
-
-    selectedFile.value = file
-
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      imagePreview.value = e.target?.result as string
-    }
-    reader.readAsDataURL(file)
+  function showDragPosition(event: PointerEvent) {
+    if (!dragging.value || !roomElement.value || !house.value) return
+    const bounds = roomElement.value.getBoundingClientRect()
+    dragging.value.positionX = Math.max(
+      3,
+      Math.min(97, ((event.clientX - bounds.left) / bounds.width) * 100)
+    )
+    dragging.value.positionY = Math.max(
+      8,
+      Math.min(86, ((event.clientY - bounds.top) / bounds.height) * 100)
+    )
   }
-
-  const openModal = () => {
-    isModalOpen.value = true
+  function startDrag(item: HouseItem, event: PointerEvent) {
+    dragging.value = item
+    roomElement.value?.setPointerCapture(event.pointerId)
   }
-
-  const closeModal = () => {
-    isModalOpen.value = false
-  }
-
-  async function updatePfp() {
-    if (!selectedFile.value) return
-
-    isUploading.value = true
-
+  async function finishDrag() {
+    const item = dragging.value
+    dragging.value = null
+    if (!item) return
+    placing.value = item.id
+    placementNotice.value = ''
     try {
-      const formData = new FormData()
-      formData.append('file', selectedFile.value)
-
-      await $fetch('/api/users/upload', {
-        method: 'POST',
-        body: formData,
+      await $fetch(`/api/house/decorations/${item.id}`, {
+        method: 'PATCH',
+        body: {
+          equipped: true,
+          positionX: item.positionX,
+          positionY: item.positionY,
+          rotation: item.rotation ?? 0,
+        },
       })
-
-      // Refresh users data to show updated profile picture
-      await refreshNuxtData()
-
-      // Reset state
-      selectedFile.value = null
-      imagePreview.value = ''
-      isModalOpen.value = false
-    } catch (error) {
-      console.error('Upload failed:', error)
+    } catch (cause) {
+      placementNotice.value = errorText(cause, 'Could not save that position.')
+      await refreshHouse()
     } finally {
-      isUploading.value = false
+      placing.value = null
+    }
+  }
+  function errorText(cause: unknown, fallback: string) {
+    const failure = cause as { data?: { statusMessage?: string }; message?: string }
+    return failure?.data?.statusMessage ?? failure?.message ?? fallback
+  }
+  async function toggleDecoration(item: OwnedDecoration) {
+    placing.value = item.id
+    placementNotice.value = ''
+    try {
+      await $fetch(`/api/house/decorations/${item.id}`, {
+        method: 'PATCH',
+        body: { equipped: !item.equipped },
+      })
+      await Promise.all([refreshInventory(), refreshHouse()])
+    } catch (cause) {
+      placementNotice.value = errorText(cause, 'Could not update your home. Please try again.')
+    } finally {
+      placing.value = null
     }
   }
 </script>
 
 <template>
-  <UContainer class="py-10">
-    <div class="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-center">
-      <div>
-        <h1 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">Dashboard</h1>
-        <p class="mt-1 text-gray-500 dark:text-gray-400">
-          Manage your application users and settings.
-        </p>
-      </div>
-      <div class="flex justify-between gap-4 md:items-center">
-        <UModal :open="isModalOpen">
-          <UButton
-            color="success"
-            variant="soft"
-            @click="openModal"
-            icon="i-heroicons-arrow-up-on-square-20-solid"
-            label="Update Profile Picture"
-          />
-
-          <template #content>
-            <div class="m-12 space-y-4">
-              <h3 class="text-lg font-medium text-gray-900 dark:text-white">
-                Update Profile Picture
-              </h3>
-
-              <div v-if="imagePreview" class="flex justify-center">
-                <UAvatar :src="imagePreview" size="3xl" />
-              </div>
-
-              <div>
-                <input
-                  type="file"
-                  accept="image/*"
-                  class="file:bg-primary-50 file:text-brand4 hover:file:bg-primary-100 block w-full cursor-pointer text-sm text-gray-500 file:mr-4 file:rounded-full file:border-0 file:px-4 file:py-2 file:text-sm file:font-semibold"
-                  @change="handleImageUpload"
-                />
-              </div>
-
-              <div class="flex justify-end gap-2">
-                <UButton variant="soft" @click="closeModal"> Cancel </UButton>
-                <UButton
-                  color="success"
-                  :loading="isUploading"
-                  :disabled="!selectedFile"
-                  @click="updatePfp"
-                >
-                  Upload
-                </UButton>
-              </div>
-            </div>
-          </template>
-        </UModal>
-        <UButton
-          color="error"
-          variant="soft"
-          icon="i-heroicons-arrow-right-on-rectangle-20-solid"
-          label="Logout"
-          @click="logout"
-        />
-      </div>
-    </div>
-
-    <UCard class="w-full">
-      <template #header>
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <UIcon name="i-heroicons-users-20-solid" class="h-5 w-5 text-gray-500" />
-            <h2 class="text-base leading-7 font-semibold text-gray-900 dark:text-white">
-              Registered Users
-            </h2>
+  <main class="play-page home-page">
+    <section class="welcome">
+      <span class="coin-pill">{{ house?.coins ?? 0 }} coins</span>
+      <p class="eyebrow">A LITTLE SPACE TO GROW</p>
+      <h1>Welcome home<span>.</span></h1>
+      <p>Your cozy corner is ready whenever you are.</p>
+    </section>
+    <p v-if="error" class="notice error">Your home could not load. Please refresh and try again.</p>
+    <p v-if="placementNotice" class="notice error" role="alert">{{ placementNotice }}</p>
+    <section class="home-layout">
+      <article class="room-card">
+        <div class="room-heading">
+          <div>
+            <p class="eyebrow">YOUR HAPPY PLACE</p>
+            <h2>{{ house?.name ?? 'My cozy home' }}</h2>
           </div>
-          <UBadge variant="subtle" color="primary" size="md">{{ users?.length || 0 }} Users</UBadge>
+          <span class="sun-mark">☀️</span>
         </div>
-      </template>
-
-      <div v-if="pending" class="space-y-4">
-        <div v-for="i in 3" :key="i" class="flex items-center justify-between py-2">
-          <div class="flex w-full items-center gap-3">
-            <USkeleton class="h-10 w-10 rounded-full" />
-            <div class="w-full max-w-[200px] space-y-2">
-              <USkeleton class="h-4 w-full" />
-              <USkeleton class="h-3 w-2/3" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div v-else-if="error">
-        <UAlert
-          icon="i-heroicons-exclamation-triangle-20-solid"
-          color="error"
-          variant="subtle"
-          title="Error loading users"
-          :description="error.message"
-        />
-      </div>
-
-      <div v-else class="divide-y divide-gray-200 dark:divide-gray-800">
         <div
-          v-for="user in users"
-          :key="user.id"
-          class="flex items-center justify-between py-4 first:pt-0 last:pb-0"
+          ref="roomElement"
+          class="room-scene"
+          :aria-label="`${house?.name ?? 'Home'} room`"
+          @pointermove="showDragPosition"
+          @pointerup="finishDrag"
+          @pointercancel="finishDrag"
         >
-          <div class="flex items-center gap-3">
-            <UAvatar :src="getImageLink(user)" :alt="user.name" size="md" :as="{ img: 'img' }" />
-            <div>
-              <p class="font-medium text-gray-900 dark:text-white">{{ user.name }}</p>
-              <p class="text-sm text-gray-500 dark:text-gray-400">{{ user.email }}</p>
-            </div>
-          </div>
-          <UBadge :color="user.emailVerified ? 'success' : 'warning'" variant="subtle" size="sm">
-            {{ user.emailVerified ? 'Verified' : 'Pending' }}
-          </UBadge>
+          <img
+            class="room-art"
+            src="/decor/cozy-room.svg"
+            alt="A sunny, cozy room illustration"
+            draggable="false"
+          />
+          <img
+            v-for="(item, index) in house?.decorations ?? []"
+            :key="item.id"
+            class="placed-item"
+            :class="{ dragging: dragging?.id === item.id }"
+            :src="assetImage(item.assetKey)"
+            :style="{
+              left: `${item.positionX ?? 28 + index * 17}%`,
+              top: `${item.positionY ?? 68}%`,
+              transform: `rotate(${item.rotation ?? 0}deg)`,
+            }"
+            :alt="item.name"
+            :title="`${item.name} — drag to move`"
+            draggable="false"
+            @pointerdown.prevent="startDrag(item, $event)"
+          />
+          <p class="room-message">
+            {{ pending ? 'Getting your room ready…' : 'A calm place, just for you' }}
+          </p>
         </div>
-
-        <div v-if="users?.length === 0" class="py-8 text-center text-gray-500">No users found.</div>
+        <NuxtLink to="/shop" class="primary-button decorate-button"
+          >✧ &nbsp; Visit the shop</NuxtLink
+        >
+      </article>
+      <aside class="home-aside">
+        <article class="side-card">
+          <span class="side-icon">✨</span>
+          <p class="eyebrow">YOUR COLLECTION</p>
+          <h2>
+            {{ inventory?.length ?? 0 }} cozy {{ inventory?.length === 1 ? 'thing' : 'things' }}
+          </h2>
+          <p>Little touches make a space feel like yours.</p>
+          <NuxtLink to="/shop" class="text-link">Find something lovely <span>→</span></NuxtLink>
+        </article>
+        <article class="side-card soft-side">
+          <span class="side-icon">🌿</span>
+          <p class="eyebrow">TAKE A BREATH</p>
+          <h2>You’re growing at your own pace.</h2>
+          <p>Small steps count. Come back whenever you’re ready.</p>
+        </article>
+      </aside>
+    </section>
+    <section v-if="inventory?.length" class="inventory-panel">
+      <p class="eyebrow">YOUR THINGS</p>
+      <h2>Make this space yours</h2>
+      <div class="inventory-list">
+        <div v-for="item in inventory" :key="item.id" class="inventory-item">
+          <img :src="assetImage(item.assetKey)" alt="" /><strong>{{ item.name }}</strong
+          ><button
+            class="soft-button"
+            :disabled="placing === item.id"
+            @click="toggleDecoration(item)"
+          >
+            {{ item.equipped ? 'Put away' : 'Place in home' }}
+          </button>
+        </div>
       </div>
-    </UCard>
-  </UContainer>
+    </section>
+    <nav class="bottom-nav" aria-label="Main navigation">
+      <NuxtLink to="/" class="nav-link active"><span>⌂</span>Home</NuxtLink
+      ><NuxtLink to="/shop" class="nav-link"><span>◇</span>Shop</NuxtLink>
+    </nav>
+  </main>
 </template>

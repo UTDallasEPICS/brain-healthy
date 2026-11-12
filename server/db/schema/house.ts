@@ -34,9 +34,11 @@ export const decorItems = sqliteTable(
       .primaryKey()
       .$defaultFn(() => crypto.randomUUID()),
     name: text('name').notNull(),
+    description: text('description').notNull().default(''),
     category: text('category').notNull(),
     priceCoins: integer('price_coins').notNull(),
     assetKey: text('asset_key').notNull(),
+    repeatable: integer('repeatable', { mode: 'boolean' }).notNull().default(false),
     active: integer('active', { mode: 'boolean' }).notNull().default(true),
   },
   (t) => [

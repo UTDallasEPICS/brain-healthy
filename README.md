@@ -175,3 +175,36 @@ Before the GitHub Actions will work, you need:
 ## License
 
 MIT
+
+# Home and shop API
+
+Run the app with `pnpm dev` and sign in first. The API uses the Better Auth session
+cookie, so browser requests from the signed-in app are authenticated automatically.
+For a REST client, copy the `Cookie` request header from a signed-in browser session
+and send it with each request.
+
+| Method  | Path                                      | Purpose                                                                                                          |
+| ------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `GET`   | `/api/house`                              | Your house, placed decorations, and coin balance                                                                 |
+| `GET`   | `/api/decorations`                        | Shop catalog and your coin balance                                                                               |
+| `GET`   | `/api/decorations/inventory`              | Your owned decorations                                                                                           |
+| `GET`   | `/api/coins`                              | Your balance and latest 20 coin transactions                                                                     |
+| `POST`  | `/api/decorations/:decorationId/purchase` | Buy a decoration; returns the owned inventory item                                                               |
+| `PATCH` | `/api/house/decorations/:ownedItemId`     | Place or put away an item; optional `positionX`, `positionY` (0–100) and `rotation` (-360–360) save its position |
+
+Example from the browser console while signed in:
+
+```js
+const shop = await fetch('/api/decorations').then((response) => response.json())
+console.log(shop.coins, shop.decorations)
+```
+
+Example with curl (replace the cookie value with the one from your browser's Network
+request headers):
+
+```sh
+curl -H 'Cookie: better-auth.session_token=YOUR_SESSION_COOKIE' \
+  http://localhost:3000/api/house
+```
+
+API calls require a signed-in account. An unauthenticated request returns HTTP 401.
