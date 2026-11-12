@@ -22,6 +22,7 @@ const REWARD_RULE_SEEDS = [
   { actionCode: 'EVENT_PARTICIPATION', coinAmount: 5, enabled: true },
   { actionCode: 'SOCIAL_NUDGE', coinAmount: 5, enabled: false },
   { actionCode: 'VERIFIED_REFERRAL', coinAmount: 30, enabled: true },
+  { actionCode: 'LESSON_COMPLETE', coinAmount: 5, enabled: true },
 ] as const
 
 // Starter wellness quests. Fixed ids keep re-seeding idempotent and let the
@@ -57,6 +58,90 @@ const QUEST_SEEDS = [
     description: 'Learn how small daily habits support brain health.',
     recurrence: 'once',
   },
+  {
+    id: 'seed-quest-sleep-lesson',
+    title: 'Sleep and your brain',
+    description: 'Watch the sleep lesson and pass its quiz.',
+    recurrence: 'once',
+  },
+] as const
+
+// Placeholder lessons until the client provides real videos. Each question
+// lists its options with the correct one first; seedLessons stores the flag.
+const LESSON_SEEDS = [
+  {
+    id: 'seed-lesson-stress',
+    activityId: 'seed-quest-intro-lesson',
+    title: 'Managing everyday stress',
+    description: 'A short guided breathing exercise and why it calms the nervous system.',
+    videoUrl: 'https://www.youtube.com/watch?v=inpok4MKVLM',
+    questions: [
+      [
+        'Slow, deep breathing mainly helps by…',
+        'Calming the nervous system',
+        'Raising heart rate',
+        'Increasing caffeine absorption',
+      ],
+      [
+        'A good first step when you feel stressed is to…',
+        'Pause and notice how you feel',
+        'Ignore it completely',
+        'Skip your next meal',
+      ],
+      [
+        'Short daily habits are effective because…',
+        'Small actions add up over time',
+        'They only work once',
+        'They replace sleep',
+      ],
+      [
+        'Which is a healthy stress-relief habit?',
+        'A short walk outside',
+        'Scrolling until 3am',
+        'Skipping water all day',
+      ],
+      [
+        'How often should you check in on your stress?',
+        'Regularly, like once a day',
+        'Never',
+        'Only during finals',
+      ],
+    ],
+  },
+  {
+    id: 'seed-lesson-sleep',
+    activityId: 'seed-quest-sleep-lesson',
+    title: 'Sleep and your brain',
+    description: 'How sleep supports memory, focus, and mood.',
+    videoUrl: 'https://www.youtube.com/watch?v=5MuIMqhT8DM',
+    questions: [
+      [
+        'Sleep helps the brain by…',
+        'Consolidating memories',
+        'Erasing everything learned',
+        'Stopping all activity',
+      ],
+      ['How much sleep do most young adults need?', '7–9 hours', '3–4 hours', '12–14 hours'],
+      [
+        'Which habit improves sleep quality?',
+        'A consistent bedtime',
+        'Screens right before bed',
+        'Late-night caffeine',
+      ],
+      [
+        'Pulling an all-nighter before an exam usually…',
+        'Hurts recall and focus',
+        'Doubles memory',
+        'Has no effect',
+      ],
+      [
+        'A good wind-down routine might include…',
+        'Dim lights and no screens',
+        'An intense workout at midnight',
+        'Energy drinks',
+      ],
+    ],
+  },
 ] as const
 
 function seedRewardRules() {
@@ -87,6 +172,38 @@ function seedQuests() {
       .onConflictDoNothing()
       .run()
   }
+}
+
+function seedLessons() {
+  LESSON_SEEDS.forEach(({ questions, ...lesson }, lessonIndex) => {
+    db.insert(schema.lessons)
+      .values({ ...lesson, sortOrder: lessonIndex })
+      .onConflictDoNothing()
+      .run()
+
+    questions.forEach(([prompt, correct, ...wrong], questionIndex) => {
+      // Rotate where the correct option lands so it isn't always first.
+      const options: string[] = [...wrong]
+      options.splice(questionIndex % (wrong.length + 1), 0, correct)
+      const questionId = `${lesson.id}-q${questionIndex + 1}`
+      db.insert(schema.quizQuestions)
+        .values({ id: questionId, lessonId: lesson.id, prompt, sortOrder: questionIndex })
+        .onConflictDoNothing()
+        .run()
+
+      options.forEach((label, optionIndex) => {
+        db.insert(schema.quizAnswerOptions)
+          .values({
+            id: `${questionId}-o${optionIndex + 1}`,
+            questionId,
+            label,
+            isCorrect: label === correct,
+          })
+          .onConflictDoNothing()
+          .run()
+      })
+    })
+  })
 }
 
 async function seedUser() {
@@ -141,6 +258,7 @@ async function main() {
 
   seedRewardRules()
   seedQuests()
+  seedLessons()
   await seedUser()
 
   console.log('Seeding finished.')

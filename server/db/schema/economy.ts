@@ -12,6 +12,7 @@ export const rewardActivityTypes = [
   'qr_event_check_in',
   'social_engagement',
   'verified_friend_referral',
+  'lesson_quiz_completion',
 ] as const
 
 export type RewardActivityType = (typeof rewardActivityTypes)[number]
