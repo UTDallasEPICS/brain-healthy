@@ -1,0 +1,1 @@
+ALTER TABLE `coin_transactions` ADD `reason` text;
