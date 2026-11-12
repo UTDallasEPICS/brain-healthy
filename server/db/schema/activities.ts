@@ -19,6 +19,7 @@ export const REWARD_ACTION_CODES = [
   'EVENT_PARTICIPATION',
   'SOCIAL_NUDGE',
   'VERIFIED_REFERRAL',
+  'LESSON_COMPLETE',
 ] as const
 
 export const ACTIVITY_TYPES = ['quest', 'event'] as const

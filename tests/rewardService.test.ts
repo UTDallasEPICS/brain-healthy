@@ -38,6 +38,7 @@ const defaults = [
   { actionCode: 'EVENT_PARTICIPATION', coinAmount: 5, enabled: true },
   { actionCode: 'SOCIAL_NUDGE', coinAmount: 5, enabled: false },
   { actionCode: 'VERIFIED_REFERRAL', coinAmount: 30, enabled: true },
+  { actionCode: 'LESSON_COMPLETE', coinAmount: 5, enabled: true },
 ] as const
 
 function addInvitedFriend(id: string, { verified = true, invitedBy = 'user-1' } = {}) {
@@ -70,6 +71,7 @@ describe('reward configuration', () => {
       { activityType: 'qr_event_check_in', coinAmount: 5, enabled: true },
       { activityType: 'social_engagement', coinAmount: 5, enabled: false },
       { activityType: 'verified_friend_referral', coinAmount: 30, enabled: true },
+      { activityType: 'lesson_quiz_completion', coinAmount: 5, enabled: true },
     ])
   })
 
