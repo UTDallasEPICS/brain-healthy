@@ -27,6 +27,13 @@
           </NuxtLink>
 
           <div class="flex items-center gap-2">
+            <UButton
+              to="/lessons"
+              icon="i-heroicons-play-circle"
+              color="neutral"
+              variant="ghost"
+              label="Lessons"
+            />
             <!-- Dev-only test console for coins, rewards, and quests. -->
             <UButton
               v-if="isDev"

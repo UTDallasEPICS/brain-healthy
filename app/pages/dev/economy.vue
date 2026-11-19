@@ -67,6 +67,7 @@
     qr_event_check_in: 'EVENT_PARTICIPATION',
     social_engagement: 'SOCIAL_NUDGE',
     verified_friend_referral: 'VERIFIED_REFERRAL',
+    lesson_quiz_completion: 'LESSON_COMPLETE',
   }
 
   const toast = useToast()

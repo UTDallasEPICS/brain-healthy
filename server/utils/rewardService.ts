@@ -15,6 +15,7 @@ const ACTION_CODE_BY_ACTIVITY = {
   qr_event_check_in: 'EVENT_PARTICIPATION',
   social_engagement: 'SOCIAL_NUDGE',
   verified_friend_referral: 'VERIFIED_REFERRAL',
+  lesson_quiz_completion: 'LESSON_COMPLETE',
 } as const satisfies Record<RewardActivityType, (typeof REWARD_ACTION_CODES)[number]>
 
 const REWARD_REASON_BY_ACTIVITY = {
@@ -22,6 +23,7 @@ const REWARD_REASON_BY_ACTIVITY = {
   qr_event_check_in: 'Campus event check-in',
   social_engagement: 'Social engagement',
   verified_friend_referral: 'Verified friend referral',
+  lesson_quiz_completion: 'Lesson quiz passed',
 } as const satisfies Record<RewardActivityType, string>
 
 export const MAX_REWARDED_REFERRALS = 3

@@ -22,6 +22,7 @@ export const DEFAULT_REWARD_RULES = [
   { actionCode: 'EVENT_PARTICIPATION', coinAmount: 5, enabled: true },
   { actionCode: 'SOCIAL_NUDGE', coinAmount: 5, enabled: false },
   { actionCode: 'VERIFIED_REFERRAL', coinAmount: 30, enabled: true },
+  { actionCode: 'LESSON_COMPLETE', coinAmount: 5, enabled: true },
 ] as const
 
 // Invitees created by POST /api/dev/referrals, so reset can find and remove them.
