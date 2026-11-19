@@ -172,3 +172,9 @@ export function spendCoins(
   // it up front ('immediate') rather than upgrading from a read lock mid-way.
   return writer ? spend(writer) : db.transaction(spend, { behavior: 'immediate' })
 }
+
+
+/** Current balance plus the latest ledger entries, for the home and shop pages. */
+export function getCoinSummary(userId: string, limit = 20) {
+  return { balance: getCoinBalance(userId), transactions: getCoinTransactions(userId, { limit }) }
+}

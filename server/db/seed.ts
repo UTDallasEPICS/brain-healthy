@@ -144,9 +144,21 @@ const LESSON_SEEDS = [
   },
 ] as const
 
+const DECORATION_SEEDS = [
+  { id: 'starter-plant', name: 'Sunny Plant', description: 'A cheerful plant for a cozy corner.', category: 'plant', priceCoins: 10, assetKey: 'decor/plant-sunny' },
+  { id: 'starter-lamp', name: 'Reading Lamp', description: 'A warm lamp for your favorite reading spot.', category: 'lighting', priceCoins: 15, assetKey: 'decor/lamp-reading' },
+  { id: 'starter-rug', name: 'Cloud Rug', description: 'A soft rug that makes any room feel welcoming.', category: 'floor', priceCoins: 20, assetKey: 'decor/rug-cloud' },
+] as const
+
 function seedRewardRules() {
   for (const rule of REWARD_RULE_SEEDS) {
     db.insert(schema.rewardRules).values(rule).onConflictDoNothing().run()
+  }
+}
+
+function seedDecorations() {
+  for (const decoration of DECORATION_SEEDS) {
+    db.insert(schema.decorItems).values(decoration).onConflictDoNothing().run()
   }
 }
 
@@ -206,6 +218,15 @@ function seedLessons() {
   })
 }
 
+// Matches ensureHouse in server/utils/decorationService.ts (the seed uses its own
+// db connection, so it cannot import that module).
+function seedHouse(userId: string) {
+  db.insert(schema.houses)
+    .values({ userId, name: 'My cozy home', baseAssetKey: 'decor/cozy-room' })
+    .onConflictDoNothing({ target: schema.houses.userId })
+    .run()
+}
+
 async function seedUser() {
   const password = process.env.SEED_USER_PASSWORD
 
@@ -219,6 +240,7 @@ async function seedUser() {
   })
 
   if (existingUser) {
+    seedHouse(existingUser.id)
     console.log({ user: existingUser })
     return
   }
@@ -247,6 +269,8 @@ async function seedUser() {
       })
       .run()
 
+    seedHouse(created!.id)
+
     return created
   })
 
@@ -257,6 +281,7 @@ async function main() {
   console.log('Start seeding...')
 
   seedRewardRules()
+  seedDecorations()
   seedQuests()
   seedLessons()
   await seedUser()

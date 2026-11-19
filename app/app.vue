@@ -1,12 +1,9 @@
 <script setup lang="ts">
   const colorMode = useColorMode()
   const isDev = import.meta.dev
-
   const isDark = computed({
-    get() {
-      return colorMode.value === 'dark'
-    },
-    set() {
+    get: () => colorMode.value === 'dark',
+    set: () => {
       colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'
     },
   })
@@ -14,49 +11,17 @@
 
 <template>
   <UApp>
-    <div
-      class="flex min-h-screen flex-col bg-white text-gray-900 transition-colors duration-300 dark:bg-gray-900 dark:text-gray-100"
-    >
-      <header
-        class="sticky top-0 z-50 border-b border-gray-200 bg-white/75 backdrop-blur-md dark:border-gray-800 dark:bg-gray-900/75"
-      >
-        <UContainer class="flex h-16 items-center justify-between">
-          <NuxtLink to="/" class="flex items-center gap-2 text-xl font-bold">
-            <UIcon name="i-heroicons-cube-transparent" class="text-primary-500 h-8 w-8" />
-            <span>Nuxt Template</span>
-          </NuxtLink>
-
-          <div class="flex items-center gap-2">
-            <UButton
-              to="/lessons"
-              icon="i-heroicons-play-circle"
-              color="neutral"
-              variant="ghost"
-              label="Lessons"
-            />
-            <!-- Dev-only test console for coins, rewards, and quests. -->
-            <UButton
-              v-if="isDev"
-              to="/dev/economy"
-              icon="i-heroicons-beaker"
-              color="neutral"
-              variant="ghost"
-              label="Test console"
-            />
-            <UButton
-              :icon="isDark ? 'i-heroicons-moon-20-solid' : 'i-heroicons-sun-20-solid'"
-              color="neutral"
-              variant="ghost"
-              @click="isDark = !isDark"
-              aria-label="Toggle Theme"
-            />
-          </div>
-        </UContainer>
-      </header>
-
-      <main class="flex-1">
-        <NuxtPage />
-      </main>
-    </div>
+    <header class="site-header">
+      <NuxtLink to="/" class="brand">Belonging Blocks</NuxtLink>
+      <nav class="header-actions">
+        <NuxtLink to="/lessons" class="header-link">Lessons</NuxtLink>
+        <!-- Dev-only test console for coins, rewards, and quests. -->
+        <NuxtLink v-if="isDev" to="/dev/economy" class="header-link">Test console</NuxtLink>
+        <button class="theme-toggle" aria-label="Toggle Theme" @click="isDark = !isDark">
+          {{ isDark ? '☾' : '☼' }}
+        </button>
+      </nav>
+    </header>
+    <NuxtPage />
   </UApp>
 </template>

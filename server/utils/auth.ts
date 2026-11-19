@@ -4,6 +4,7 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { jwt } from 'better-auth/plugins/jwt'
 import { db } from './db'
 import { env } from './env'
+import { ensureHouse } from './decorationService'
 import { isUtdEmail } from '../../shared/utils/email-domain'
 import nodemailer from 'nodemailer'
 
@@ -58,6 +59,11 @@ export const auth = betterAuth({
       create: {
         async before(user) {
           assertUtdEmail(user.email)
+        },
+        // Every student gets a house at sign-up. ensureHouse is idempotent, and
+        // the house endpoints also call it for users created before this hook.
+        async after(user) {
+          ensureHouse(user.id)
         },
       },
       update: {
