@@ -48,9 +48,9 @@ export function ensureHouse(userId: string, writer: HouseWriter = db) {
   return find()!
 }
 
-export function getHouse(userId: string) {
-  const house = ensureHouse(userId)
-  const placed = db
+/** Decorations of `userId` currently placed in `houseId`, oldest first. */
+export function getPlacedDecorations(userId: string, houseId: string) {
+  return db
     .select({
       id: userItems.id,
       decorationId: decorItems.id,
@@ -62,9 +62,14 @@ export function getHouse(userId: string) {
     })
     .from(userItems)
     .innerJoin(decorItems, eq(userItems.itemId, decorItems.id))
-    .where(and(eq(userItems.userId, userId), eq(userItems.placedHouseId, house.id)))
+    .where(and(eq(userItems.userId, userId), eq(userItems.placedHouseId, houseId)))
     .orderBy(asc(userItems.acquiredAt), asc(userItems.id))
     .all()
+}
+
+export function getHouse(userId: string) {
+  const house = ensureHouse(userId)
+  const placed = getPlacedDecorations(userId, house.id)
   // Placed items must have a stored position. A render-time fallback based on list
   // order shifts every other item whenever one is put away.
   placed.forEach((item, index) => {
