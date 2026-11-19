@@ -2,6 +2,7 @@ import 'dotenv/config'
 import Database from 'better-sqlite3'
 import { drizzle } from 'drizzle-orm/better-sqlite3'
 import { hashPassword } from 'better-auth/crypto'
+import { eq } from 'drizzle-orm'
 import * as schema from './schema'
 
 const connectionString = process.env.DATABASE_URL!.replace('file:', '')
@@ -21,12 +22,209 @@ const REWARD_RULE_SEEDS = [
   { actionCode: 'EVENT_PARTICIPATION', coinAmount: 5, enabled: true },
   { actionCode: 'SOCIAL_NUDGE', coinAmount: 5, enabled: false },
   { actionCode: 'VERIFIED_REFERRAL', coinAmount: 30, enabled: true },
+  { actionCode: 'LESSON_COMPLETE', coinAmount: 5, enabled: true },
+] as const
+
+// Starter wellness quests. Fixed ids keep re-seeding idempotent and let the
+// content be edited in the database without a duplicate appearing next run.
+const QUEST_SEEDS = [
+  {
+    id: 'seed-quest-hydration',
+    title: 'Hydration check-in',
+    description: 'Drink a full glass of water and check in.',
+    recurrence: 'daily',
+  },
+  {
+    id: 'seed-quest-screen-break',
+    title: 'Screen-time break',
+    description: 'Put your phone away for one hour without checking it.',
+    recurrence: 'daily',
+  },
+  {
+    id: 'seed-quest-stress-check-in',
+    title: 'Stress check-in',
+    description: 'Pause, take three slow breaths, and notice how you are feeling today.',
+    recurrence: 'daily',
+  },
+  {
+    id: 'seed-quest-screen-free-evening',
+    title: 'Screen-free evening',
+    description: 'Spend one evening this week without recreational screens.',
+    recurrence: 'weekly',
+  },
+  {
+    id: 'seed-quest-intro-lesson',
+    title: 'Intro to stress quests',
+    description: 'Learn how small daily habits support brain health.',
+    recurrence: 'once',
+  },
+  {
+    id: 'seed-quest-sleep-lesson',
+    title: 'Sleep and your brain',
+    description: 'Watch the sleep lesson and pass its quiz.',
+    recurrence: 'once',
+  },
+] as const
+
+// Placeholder lessons until the client provides real videos. Each question
+// lists its options with the correct one first; seedLessons stores the flag.
+const LESSON_SEEDS = [
+  {
+    id: 'seed-lesson-stress',
+    activityId: 'seed-quest-intro-lesson',
+    title: 'Managing everyday stress',
+    description: 'A short guided breathing exercise and why it calms the nervous system.',
+    videoUrl: 'https://www.youtube.com/watch?v=inpok4MKVLM',
+    questions: [
+      [
+        'Slow, deep breathing mainly helps by…',
+        'Calming the nervous system',
+        'Raising heart rate',
+        'Increasing caffeine absorption',
+      ],
+      [
+        'A good first step when you feel stressed is to…',
+        'Pause and notice how you feel',
+        'Ignore it completely',
+        'Skip your next meal',
+      ],
+      [
+        'Short daily habits are effective because…',
+        'Small actions add up over time',
+        'They only work once',
+        'They replace sleep',
+      ],
+      [
+        'Which is a healthy stress-relief habit?',
+        'A short walk outside',
+        'Scrolling until 3am',
+        'Skipping water all day',
+      ],
+      [
+        'How often should you check in on your stress?',
+        'Regularly, like once a day',
+        'Never',
+        'Only during finals',
+      ],
+    ],
+  },
+  {
+    id: 'seed-lesson-sleep',
+    activityId: 'seed-quest-sleep-lesson',
+    title: 'Sleep and your brain',
+    description: 'How sleep supports memory, focus, and mood.',
+    videoUrl: 'https://www.youtube.com/watch?v=5MuIMqhT8DM',
+    questions: [
+      [
+        'Sleep helps the brain by…',
+        'Consolidating memories',
+        'Erasing everything learned',
+        'Stopping all activity',
+      ],
+      ['How much sleep do most young adults need?', '7–9 hours', '3–4 hours', '12–14 hours'],
+      [
+        'Which habit improves sleep quality?',
+        'A consistent bedtime',
+        'Screens right before bed',
+        'Late-night caffeine',
+      ],
+      [
+        'Pulling an all-nighter before an exam usually…',
+        'Hurts recall and focus',
+        'Doubles memory',
+        'Has no effect',
+      ],
+      [
+        'A good wind-down routine might include…',
+        'Dim lights and no screens',
+        'An intense workout at midnight',
+        'Energy drinks',
+      ],
+    ],
+  },
+] as const
+
+const DECORATION_SEEDS = [
+  { id: 'starter-plant', name: 'Sunny Plant', description: 'A cheerful plant for a cozy corner.', category: 'plant', priceCoins: 10, assetKey: 'decor/plant-sunny' },
+  { id: 'starter-lamp', name: 'Reading Lamp', description: 'A warm lamp for your favorite reading spot.', category: 'lighting', priceCoins: 15, assetKey: 'decor/lamp-reading' },
+  { id: 'starter-rug', name: 'Cloud Rug', description: 'A soft rug that makes any room feel welcoming.', category: 'floor', priceCoins: 20, assetKey: 'decor/rug-cloud' },
 ] as const
 
 function seedRewardRules() {
   for (const rule of REWARD_RULE_SEEDS) {
     db.insert(schema.rewardRules).values(rule).onConflictDoNothing().run()
   }
+}
+
+function seedDecorations() {
+  for (const decoration of DECORATION_SEEDS) {
+    db.insert(schema.decorItems).values(decoration).onConflictDoNothing().run()
+  }
+}
+
+function seedQuests() {
+  const questRule = db
+    .select({ id: schema.rewardRules.id })
+    .from(schema.rewardRules)
+    .where(eq(schema.rewardRules.actionCode, 'QUEST_COMPLETE'))
+    .get()
+
+  if (!questRule) {
+    throw new Error('QUEST_COMPLETE reward rule is missing; cannot seed quests.')
+  }
+
+  for (const quest of QUEST_SEEDS) {
+    db.insert(schema.activities)
+      .values({
+        ...quest,
+        rewardRuleId: questRule.id,
+        activityType: 'quest',
+        evidenceType: 'self_report',
+      })
+      .onConflictDoNothing()
+      .run()
+  }
+}
+
+function seedLessons() {
+  LESSON_SEEDS.forEach(({ questions, ...lesson }, lessonIndex) => {
+    db.insert(schema.lessons)
+      .values({ ...lesson, sortOrder: lessonIndex })
+      .onConflictDoNothing()
+      .run()
+
+    questions.forEach(([prompt, correct, ...wrong], questionIndex) => {
+      // Rotate where the correct option lands so it isn't always first.
+      const options: string[] = [...wrong]
+      options.splice(questionIndex % (wrong.length + 1), 0, correct)
+      const questionId = `${lesson.id}-q${questionIndex + 1}`
+      db.insert(schema.quizQuestions)
+        .values({ id: questionId, lessonId: lesson.id, prompt, sortOrder: questionIndex })
+        .onConflictDoNothing()
+        .run()
+
+      options.forEach((label, optionIndex) => {
+        db.insert(schema.quizAnswerOptions)
+          .values({
+            id: `${questionId}-o${optionIndex + 1}`,
+            questionId,
+            label,
+            isCorrect: label === correct,
+          })
+          .onConflictDoNothing()
+          .run()
+      })
+    })
+  })
+}
+
+// Matches ensureHouse in server/utils/decorationService.ts (the seed uses its own
+// db connection, so it cannot import that module).
+function seedHouse(userId: string) {
+  db.insert(schema.houses)
+    .values({ userId, name: 'My cozy home', baseAssetKey: 'decor/cozy-room' })
+    .onConflictDoNothing({ target: schema.houses.userId })
+    .run()
 }
 
 async function seedUser() {
@@ -42,6 +240,7 @@ async function seedUser() {
   })
 
   if (existingUser) {
+    seedHouse(existingUser.id)
     console.log({ user: existingUser })
     return
   }
@@ -70,6 +269,8 @@ async function seedUser() {
       })
       .run()
 
+    seedHouse(created!.id)
+
     return created
   })
 
@@ -80,6 +281,9 @@ async function main() {
   console.log('Start seeding...')
 
   seedRewardRules()
+  seedDecorations()
+  seedQuests()
+  seedLessons()
   await seedUser()
 
   console.log('Seeding finished.')

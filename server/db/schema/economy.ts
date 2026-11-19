@@ -12,6 +12,7 @@ export const rewardActivityTypes = [
   'qr_event_check_in',
   'social_engagement',
   'verified_friend_referral',
+  'lesson_quiz_completion',
 ] as const
 
 export type RewardActivityType = (typeof rewardActivityTypes)[number]
@@ -32,6 +33,9 @@ export const coinTransactions = sqliteTable(
     }),
     amount: integer('amount').notNull(),
     transactionType: text('transaction_type', { enum: TRANSACTION_TYPES }).notNull(),
+    // Human-readable explanation shown in the user's history. Nullable only so
+    // rows written before this column existed stay valid; coinService always sets it.
+    reason: text('reason'),
     sourceKey: text('source_key').notNull().unique(),
     createdAt: integer('created_at', { mode: 'timestamp' })
       .notNull()
