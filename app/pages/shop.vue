@@ -47,6 +47,7 @@
 
 <template>
   <main class="play-page">
+    <NuxtLink to="/" class="back-link">← Back to Home</NuxtLink>
     <section class="page-intro">
       <span class="coin-pill">{{ shop?.coins ?? 0 }} coins</span>
       <p class="eyebrow">MAKE IT YOURS</p>
@@ -83,9 +84,5 @@
         The shop is getting ready. Check back soon!
       </p>
     </section>
-    <nav class="bottom-nav" aria-label="Main navigation">
-      <NuxtLink to="/" class="nav-link"><span>⌂</span>Home</NuxtLink
-      ><NuxtLink to="/shop" class="nav-link active"><span>◇</span>Shop</NuxtLink>
-    </nav>
   </main>
 </template>

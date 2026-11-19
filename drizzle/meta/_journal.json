@@ -26,8 +26,29 @@
     {
       "idx": 3,
       "version": "6",
-      "when": 1794412800000,
-      "tag": "0003_calm_house_decorations",
+      "when": 1793321835497,
+      "tag": "0003_curly_mimic",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1793323430607,
+      "tag": "0004_military_thing",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1794521485945,
+      "tag": "0005_equal_moondragon",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1795048604183,
+      "tag": "0006_house_decoration_columns",
       "breakpoints": true
     }
   ]

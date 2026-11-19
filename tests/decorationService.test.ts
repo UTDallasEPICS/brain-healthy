@@ -7,7 +7,9 @@ import { decorItems, houses, userItems } from '../server/db/schema/house'
 import { user } from '../server/db/schema/auth'
 import { db } from '../server/utils/db'
 import {
+  ensureHouse,
   getDecorations,
+  getHouse,
   getUserInventory,
   purchaseDecoration,
   updateEquippedDecoration,
@@ -16,21 +18,12 @@ import {
 vi.mock('../server/utils/db', async () => {
   const Database = (await import('better-sqlite3')).default
   const { drizzle } = await import('drizzle-orm/better-sqlite3')
-  const { readFileSync } = await import('node:fs')
+  const { migrate } = await import('drizzle-orm/better-sqlite3/migrator')
   const sqlite = new Database(':memory:')
   sqlite.pragma('foreign_keys = ON')
-  for (const migrationFile of [
-    'drizzle/0000_classy_bloodstorm.sql',
-    'drizzle/0001_eager_dracula.sql',
-    'drizzle/0002_quick_psylocke.sql',
-    'drizzle/0003_calm_house_decorations.sql',
-  ]) {
-    const migration = readFileSync(`${process.cwd()}/${migrationFile}`, 'utf8')
-    for (const statement of migration.split('--> statement-breakpoint')) {
-      if (statement.trim()) sqlite.exec(statement)
-    }
-  }
-  return { db: drizzle(sqlite) }
+  const db = drizzle(sqlite)
+  migrate(db, { migrationsFolder: 'drizzle' })
+  return { db }
 })
 
 describe('decorationService', () => {
@@ -103,7 +96,7 @@ describe('decorationService', () => {
     ])
   })
 
-  it('rejects insufficient balances and duplicate non-repeatable purchases', () => {
+  it('rejects insufficient balances and allows buying the same item again', () => {
     expect(() => purchaseDecoration('user-1', 'plant')).toThrow('Insufficient coins')
     expect(db.select().from(userItems).all()).toHaveLength(0)
     db.insert(coinTransactions)
@@ -115,7 +108,8 @@ describe('decorationService', () => {
       })
       .run()
     purchaseDecoration('user-1', 'plant')
-    expect(() => purchaseDecoration('user-1', 'plant')).toThrow('Decoration already owned')
+    purchaseDecoration('user-1', 'plant')
+    expect(db.select().from(userItems).all()).toHaveLength(2)
   })
 
   it('equips and unequips an owned copy and rejects another user’s copy', () => {
@@ -129,8 +123,34 @@ describe('decorationService', () => {
     expect(getUserInventory('user-1')[0]?.equipped).toBe(true)
     updateEquippedDecoration('user-1', 'owned-plant', false)
     expect(getUserInventory('user-1')[0]?.equipped).toBe(false)
-    expect(() => updateEquippedDecoration('someone-else', 'owned-plant', true)).toThrow(
-      'House not found'
+    db.insert(user).values({ id: 'user-2', name: 'Other', email: 'other@example.com' }).run()
+    expect(() => updateEquippedDecoration('user-2', 'owned-plant', true)).toThrow(
+      'Owned decoration not found'
     )
+  })
+
+  it('creates a house automatically for a user who has none', () => {
+    db.insert(user).values({ id: 'user-2', name: 'New', email: 'new@example.com' }).run()
+    expect(db.select().from(houses).where(eq(houses.userId, 'user-2')).all()).toHaveLength(0)
+    expect(getHouse('user-2')).toMatchObject({
+      name: 'My cozy home',
+      baseAssetKey: 'decor/cozy-room',
+      decorations: [],
+    })
+    const first = ensureHouse('user-2')
+    expect(ensureHouse('user-2').id).toBe(first.id)
+    expect(db.select().from(houses).where(eq(houses.userId, 'user-2')).all()).toHaveLength(1)
+  })
+
+  it('creates a house when purchasing or equipping for a user with none', () => {
+    db.insert(user).values({ id: 'user-3', name: 'Buyer', email: 'buyer@example.com' }).run()
+    db.insert(coinTransactions)
+      .values({ userId: 'user-3', amount: 10, transactionType: 'activity_reward', sourceKey: 'e' })
+      .run()
+    const owned = purchaseDecoration('user-3', 'plant')!
+    expect(db.select().from(houses).where(eq(houses.userId, 'user-3')).all()).toHaveLength(1)
+    db.delete(houses).where(eq(houses.userId, 'user-3')).run()
+    expect(updateEquippedDecoration('user-3', owned.id, true).equipped).toBe(true)
+    expect(db.select().from(houses).where(eq(houses.userId, 'user-3')).all()).toHaveLength(1)
   })
 })

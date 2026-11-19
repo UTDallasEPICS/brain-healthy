@@ -12,7 +12,7 @@ body {
 }
 .play-page {
   min-height: 100vh;
-  padding: 0 5vw 105px;
+  padding: 0 5vw 56px;
   color: #263753;
   background: radial-gradient(ellipse at 80% 0%, #e6f3f4 0, transparent 35%), #f5f8fa;
 }
@@ -34,6 +34,20 @@ body {
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid #e1e9eb;
+}
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.header-link {
+  color: #426e91;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.header-link:hover {
+  text-decoration: underline;
 }
 .theme-toggle {
   width: 36px;
@@ -258,21 +272,27 @@ body {
 .side-card h2 {
   font-size: 19px;
 }
-.text-link {
-  display: inline-flex;
-  gap: 10px;
-  color: #477a7d;
-  font-size: 13px;
-  font-weight: 750;
-  text-decoration: none;
-  margin-top: 8px;
-}
 .soft-side {
   background: #edf6f1;
 }
 .page-intro {
-  margin-top: 49px;
+  margin-top: 24px;
 }
+.back-link {
+  display: block;
+  width: fit-content;
+  max-width: 1120px;
+  margin-left: max(0px, calc((100% - 1120px) / 2));
+  margin-top: 28px;
+  color: #426e91;
+  font-size: 14px;
+  font-weight: 750;
+  text-decoration: none;
+}
+.back-link:hover {
+  text-decoration: underline;
+}
+
 .shop-grid {
   max-width: 1120px;
   margin: auto;
@@ -409,9 +429,28 @@ body {
   touch-action: none;
   user-select: none;
 }
+.placed-item {
+  will-change: left, top;
+  transition: filter 0.15s;
+}
 .placed-item.dragging {
   cursor: grabbing;
   z-index: 4;
+  filter: drop-shadow(0 10px 8px rgb(0 0 0 / 0.28)) brightness(1.05);
+}
+.room-scene:has(.dragging) {
+  cursor: grabbing;
+}
+.drop-marker {
+  position: absolute;
+  z-index: 3;
+  width: clamp(54px, 10vw, 90px);
+  height: clamp(54px, 10vw, 90px);
+  transform: translate(-50%, -50%);
+  border: 2px dashed #426e91;
+  border-radius: 50%;
+  background: rgb(66 110 145 / 0.14);
+  pointer-events: none;
 }
 .inventory-item img {
   width: 38px;
@@ -433,42 +472,6 @@ body {
   to {
     background-position-x: -200%;
   }
-}
-.bottom-nav {
-  position: fixed;
-  z-index: 10;
-  left: 50%;
-  bottom: 18px;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 8px;
-  padding: 8px;
-  border: 1px solid #e3ebee;
-  border-radius: 20px;
-  background: #ffff;
-  box-shadow: 0 12px 32px #344c5d20;
-  backdrop-filter: blur(12px);
-}
-.nav-link {
-  min-width: 88px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 7px 12px;
-  border-radius: 13px;
-  color: #8b98a5;
-  font-size: 11px;
-  font-weight: 700;
-  text-decoration: none;
-}
-.nav-link span {
-  font-size: 22px;
-  line-height: 1;
-}
-.nav-link.active {
-  color: #386d79;
-  background: #e9f4f0;
 }
 @media (max-width: 760px) {
   .play-page {
@@ -538,6 +541,118 @@ body {
     font-size: 17px;
   }
   .play-page {
-    padding-bottom: 100px;
+    padding-bottom: 48px;
   }
+}
+
+/* Dark mode: Nuxt UI puts the `dark` class on <html>. */
+html.dark {
+  color: #e2e8f0;
+  background: #0f172a;
+}
+html.dark body {
+  background: #0f172a;
+  color: #e2e8f0;
+}
+.dark .play-page {
+  color: #e2e8f0;
+  background: radial-gradient(ellipse at 80% 0%, #16304a 0, transparent 35%), #0f172a;
+}
+.dark .play-header,
+.dark .site-header {
+  border-bottom-color: #26354d;
+}
+.dark .header-link,
+.dark .back-link {
+  color: #8fc1e3;
+}
+.dark .theme-toggle {
+  border-color: #334155;
+  background: #1e293b;
+  color: #fcd34d;
+}
+.dark .brand {
+  color: #9fd0ea;
+}
+.dark .coin-pill {
+  background: #3a2f12;
+  color: #f6d98a;
+  border-color: #6b551d;
+}
+.dark .welcome h1,
+.dark .page-intro h1 {
+  color: #f1f5f9;
+}
+.dark .welcome > p:last-child,
+.dark .page-intro > p:last-child {
+  color: #94a3b8;
+}
+.dark .eyebrow {
+  color: #7fc4bd;
+}
+.dark .room-card,
+.dark .side-card,
+.dark .shop-card,
+.dark .inventory-panel {
+  border-color: #26354d;
+  background: #1e293b;
+  box-shadow: 0 16px 40px #00000040;
+}
+.dark .room-scene {
+  background: #1c3a45;
+  border-color: #334155;
+  box-shadow: inset 0 0 0 1px #26354d;
+}
+.dark .room-art {
+  filter: brightness(0.72) saturate(0.9);
+}
+.dark .room-message {
+  color: #f1e3d8;
+  text-shadow: 0 1px 4px #000a;
+}
+.dark .primary-button {
+  background: #5a95bf;
+  color: #0b1220;
+}
+.dark .side-card > p:not(.eyebrow),
+.dark .item-copy > p:not(.item-type),
+.dark .empty {
+  color: #94a3b8;
+}
+.dark .soft-side {
+  background: #1b3a36;
+}
+.dark .item-art {
+  background: #1d3a42;
+}
+.dark .art-1 {
+  background: #3a3220;
+}
+.dark .art-2 {
+  background: #2c2a47;
+}
+.dark .item-type {
+  color: #7fc4bd;
+}
+.dark .item-buy strong {
+  color: #f6d98a;
+}
+.dark .soft-button {
+  color: #a7e0da;
+  background: #264a49;
+}
+.dark .notice {
+  color: #a7e8d8;
+  background: #173d38;
+}
+.dark .notice.error {
+  color: #fca5a5;
+  background: #43201f;
+}
+.dark .inventory-item {
+  background: #263449;
+}
+.dark .skeleton {
+  background: linear-gradient(100deg, #1e293b 30%, #2b3a52 50%, #1e293b 70%);
+  background-size: 200% 100%;
 }

@@ -28,23 +28,54 @@
             : 'plant-sunny'
     return `/decor/${file}.svg`
   }
+  const CLAMP = { minX: 4, maxX: 96, minY: 10, maxY: 90 }
+  let grabOffset = { x: 0, y: 0 }
+  let pendingMove: PointerEvent | null = null
+  let frame = 0
+  function pointerToPercent(event: PointerEvent) {
+    const el = roomElement.value
+    if (!el) return null
+    // Absolute children are positioned inside the border, so measure from the padding box.
+    const bounds = el.getBoundingClientRect()
+    const left = bounds.left + el.clientLeft
+    const top = bounds.top + el.clientTop
+    return {
+      x: ((event.clientX - left) / el.clientWidth) * 100,
+      y: ((event.clientY - top) / el.clientHeight) * 100,
+    }
+  }
+  function applyDrag() {
+    frame = 0
+    const event = pendingMove
+    pendingMove = null
+    if (!event || !dragging.value) return
+    const point = pointerToPercent(event)
+    if (!point) return
+    dragging.value.positionX = Math.max(CLAMP.minX, Math.min(CLAMP.maxX, point.x - grabOffset.x))
+    dragging.value.positionY = Math.max(CLAMP.minY, Math.min(CLAMP.maxY, point.y - grabOffset.y))
+  }
   function showDragPosition(event: PointerEvent) {
-    if (!dragging.value || !roomElement.value || !house.value) return
-    const bounds = roomElement.value.getBoundingClientRect()
-    dragging.value.positionX = Math.max(
-      3,
-      Math.min(97, ((event.clientX - bounds.left) / bounds.width) * 100)
-    )
-    dragging.value.positionY = Math.max(
-      8,
-      Math.min(86, ((event.clientY - bounds.top) / bounds.height) * 100)
-    )
+    if (!dragging.value) return
+    pendingMove = event
+    if (!frame) frame = requestAnimationFrame(applyDrag)
   }
   function startDrag(item: HouseItem, event: PointerEvent) {
+    const index = house.value?.decorations.findIndex((d) => d.id === item.id) ?? 0
+    const x = item.positionX ?? 28 + index * 17
+    const y = item.positionY ?? 68
+    item.positionX = x
+    item.positionY = y
+    const point = pointerToPercent(event)
+    // Keep the item under the cursor exactly where it was grabbed (no jump).
+    grabOffset = point ? { x: point.x - x, y: point.y - y } : { x: 0, y: 0 }
     dragging.value = item
     roomElement.value?.setPointerCapture(event.pointerId)
   }
   async function finishDrag() {
+    if (frame) {
+      cancelAnimationFrame(frame)
+      applyDrag()
+    }
     const item = dragging.value
     dragging.value = null
     if (!item) return
@@ -130,19 +161,25 @@
             :style="{
               left: `${item.positionX ?? 28 + index * 17}%`,
               top: `${item.positionY ?? 68}%`,
-              transform: `rotate(${item.rotation ?? 0}deg)`,
+              transform: `translate(-50%, -50%) rotate(${item.rotation ?? 0}deg)`,
             }"
             :alt="item.name"
             :title="`${item.name} — drag to move`"
             draggable="false"
             @pointerdown.prevent="startDrag(item, $event)"
           />
+          <div
+            v-if="dragging"
+            class="drop-marker"
+            :style="{ left: `${dragging.positionX}%`, top: `${dragging.positionY}%` }"
+            aria-hidden="true"
+          />
           <p class="room-message">
             {{ pending ? 'Getting your room ready…' : 'A calm place, just for you' }}
           </p>
         </div>
         <NuxtLink to="/shop" class="primary-button decorate-button"
-          >✧ &nbsp; Visit the shop</NuxtLink
+          >✧ &nbsp; Visit the Shop</NuxtLink
         >
       </article>
       <aside class="home-aside">
@@ -153,7 +190,6 @@
             {{ inventory?.length ?? 0 }} cozy {{ inventory?.length === 1 ? 'thing' : 'things' }}
           </h2>
           <p>Little touches make a space feel like yours.</p>
-          <NuxtLink to="/shop" class="text-link">Find something lovely <span>→</span></NuxtLink>
         </article>
         <article class="side-card soft-side">
           <span class="side-icon">🌿</span>
@@ -179,9 +215,5 @@
         </div>
       </div>
     </section>
-    <nav class="bottom-nav" aria-label="Main navigation">
-      <NuxtLink to="/" class="nav-link active"><span>⌂</span>Home</NuxtLink
-      ><NuxtLink to="/shop" class="nav-link"><span>◇</span>Shop</NuxtLink>
-    </nav>
   </main>
 </template>

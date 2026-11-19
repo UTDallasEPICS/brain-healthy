@@ -22,13 +22,34 @@ export function getShop(userId: string) {
   return { coins: getCoinBalance(userId), decorations: getDecorations() }
 }
 
+type HouseWriter = Pick<typeof db, 'insert' | 'select'>
+
+export const DEFAULT_HOUSE_NAME = 'My cozy home'
+export const DEFAULT_HOUSE_ASSET_KEY = 'decor/cozy-room'
+
+/**
+ * Returns the user's house, creating it on first use. The unique user_id column
+ * makes concurrent calls safe: the loser's insert is ignored and re-selects.
+ */
+export function ensureHouse(userId: string, writer: HouseWriter = db) {
+  const find = () =>
+    writer
+      .select({ id: houses.id, name: houses.name, baseAssetKey: houses.baseAssetKey })
+      .from(houses)
+      .where(eq(houses.userId, userId))
+      .get()
+  const existing = find()
+  if (existing) return existing
+  writer
+    .insert(houses)
+    .values({ userId, name: DEFAULT_HOUSE_NAME, baseAssetKey: DEFAULT_HOUSE_ASSET_KEY })
+    .onConflictDoNothing({ target: houses.userId })
+    .run()
+  return find()!
+}
+
 export function getHouse(userId: string) {
-  const house = db
-    .select({ id: houses.id, name: houses.name, baseAssetKey: houses.baseAssetKey })
-    .from(houses)
-    .where(eq(houses.userId, userId))
-    .get()
-  if (!house) throw createError({ statusCode: 404, statusMessage: 'House not found' })
+  const house = ensureHouse(userId)
   const placed = db
     .select({
       id: userItems.id,
@@ -42,8 +63,25 @@ export function getHouse(userId: string) {
     .from(userItems)
     .innerJoin(decorItems, eq(userItems.itemId, decorItems.id))
     .where(and(eq(userItems.userId, userId), eq(userItems.placedHouseId, house.id)))
+    .orderBy(asc(userItems.acquiredAt), asc(userItems.id))
     .all()
+  // Placed items must have a stored position. A render-time fallback based on list
+  // order shifts every other item whenever one is put away.
+  placed.forEach((item, index) => {
+    if (item.positionX === null || item.positionY === null) {
+      item.positionX = item.positionX ?? defaultSpot(index).x
+      item.positionY = item.positionY ?? defaultSpot(index).y
+      db.update(userItems)
+        .set({ positionX: item.positionX, positionY: item.positionY })
+        .where(eq(userItems.id, item.id))
+        .run()
+    }
+  })
   return { ...house, coins: getCoinBalance(userId), decorations: placed }
+}
+
+function defaultSpot(index: number) {
+  return { x: 20 + ((index * 17) % 60), y: 68 + (Math.floor((index * 17) / 60) % 3) * 8 }
 }
 
 export function purchaseDecoration(userId: string, decorationId: string) {
@@ -56,27 +94,14 @@ export function purchaseDecoration(userId: string, decorationId: string) {
         .get()
       if (!item) throw createError({ statusCode: 404, statusMessage: 'Decoration not found' })
 
-      if (!item.repeatable) {
-        const owned = tx
-          .select({ id: userItems.id })
-          .from(userItems)
-          .where(and(eq(userItems.userId, userId), eq(userItems.itemId, decorationId)))
-          .get()
-        if (owned) throw createError({ statusCode: 409, statusMessage: 'Decoration already owned' })
-      }
-
-      const [house] = tx
-        .select({ id: houses.id })
-        .from(houses)
-        .where(eq(houses.userId, userId))
-        .all()
-      if (!house) throw createError({ statusCode: 404, statusMessage: 'House not found' })
+      ensureHouse(userId, tx)
 
       spendCoins(
         userId,
         item.priceCoins,
+        `Purchased ${item.name}`,
         `decoration:${userId}:${decorationId}:${crypto.randomUUID()}`,
-        tx
+        { writer: tx }
       )
       const [ownedItem] = tx
         .insert(userItems)
@@ -121,12 +146,7 @@ export function updateEquippedDecoration(
 ) {
   return db.transaction(
     (tx) => {
-      const [house] = tx
-        .select({ id: houses.id })
-        .from(houses)
-        .where(eq(houses.userId, userId))
-        .all()
-      if (!house) throw createError({ statusCode: 404, statusMessage: 'House not found' })
+      const house = ensureHouse(userId, tx)
       const owned = tx
         .select({ id: userItems.id })
         .from(userItems)
@@ -134,8 +154,23 @@ export function updateEquippedDecoration(
         .get()
       if (!owned)
         throw createError({ statusCode: 404, statusMessage: 'Owned decoration not found' })
+      const slots = tx
+        .select({ id: userItems.id })
+        .from(userItems)
+        .where(and(eq(userItems.userId, userId), eq(userItems.placedHouseId, house.id)))
+        .all().length
+      const spot = defaultSpot(slots)
+      const current = tx
+        .select({ x: userItems.positionX, y: userItems.positionY })
+        .from(userItems)
+        .where(eq(userItems.id, decorationId))
+        .get()
+      const fill =
+        equipped && (current?.x == null || current?.y == null)
+          ? { positionX: spot.x, positionY: spot.y }
+          : {}
       tx.update(userItems)
-        .set({ placedHouseId: equipped ? house.id : null, ...placement })
+        .set({ placedHouseId: equipped ? house.id : null, ...fill, ...placement })
         .where(and(eq(userItems.id, decorationId), eq(userItems.userId, userId)))
         .run()
       return { id: decorationId, equipped }

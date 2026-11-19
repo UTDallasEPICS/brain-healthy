@@ -33,9 +33,9 @@ describe('application shell (app.vue)', () => {
       global: { stubs: { NuxtPage: true } },
     })
 
-    // Assert: the app brand shows "Brain Garden" and targets "/".
+    // Assert: the app brand shows "Belonging Blocks" and targets "/".
     const brandLink = wrapper.get('a')
-    expect(brandLink.text()).toContain('Brain Garden')
+    expect(brandLink.text()).toContain('Belonging Blocks')
     expect(brandLink.attributes('href')).toBe('/')
     expect(fetchSpy).not.toHaveBeenCalled()
   })
