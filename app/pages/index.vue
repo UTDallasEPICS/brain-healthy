@@ -179,9 +179,6 @@
         </div>
       </div>
     </section>
-    <nav class="bottom-nav" aria-label="Main navigation">
-      <NuxtLink to="/" class="nav-link active"><span>⌂</span>Home</NuxtLink
-      ><NuxtLink to="/shop" class="nav-link"><span>◇</span>Shop</NuxtLink>
-    </nav>
+    <BottomNav active="home" />
   </main>
 </template>

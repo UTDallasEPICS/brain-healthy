@@ -83,9 +83,6 @@
         The shop is getting ready. Check back soon!
       </p>
     </section>
-    <nav class="bottom-nav" aria-label="Main navigation">
-      <NuxtLink to="/" class="nav-link"><span>⌂</span>Home</NuxtLink
-      ><NuxtLink to="/shop" class="nav-link active"><span>◇</span>Shop</NuxtLink>
-    </nav>
+    <BottomNav active="shop" />
   </main>
 </template>
