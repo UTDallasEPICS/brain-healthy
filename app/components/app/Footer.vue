@@ -16,7 +16,7 @@
 <template>
   <nav aria-label="Main navigation" class="sticky bottom-0 z-30 px-3 pb-3">
     <ul
-      class="mx-auto flex max-w-md justify-around rounded-3xl border-2 border-ink bg-navy px-2 py-3"
+      class="border-ink bg-navy mx-auto flex max-w-md justify-around rounded-3xl border-2 px-2 py-3"
     >
       <li v-for="link in links" :key="link.to">
         <NuxtLink
@@ -27,7 +27,7 @@
           :class="
             isActive(link.to)
               ? 'border-ink bg-sun text-ink'
-              : 'border-transparent bg-navy-light text-cream'
+              : 'bg-navy-light text-cream border-transparent'
           "
         >
           <UIcon :name="link.icon" class="size-6" />
