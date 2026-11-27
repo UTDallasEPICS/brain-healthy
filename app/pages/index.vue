@@ -121,6 +121,7 @@
 
 <template>
   <main class="play-page home-page">
+    <header class="mock-title home-mock-title"><h1>Home</h1><p>{{ house?.name ?? 'My cozy home' }}</p></header>
     <section class="welcome">
       <span class="coin-pill">{{ house?.coins ?? 0 }} coins</span>
       <p class="eyebrow">A LITTLE SPACE TO GROW</p>
@@ -215,5 +216,7 @@
         </div>
       </div>
     </section>
+    <NuxtLink to="/decorate" class="primary-button home-decorate-link">Decorate</NuxtLink>
+    <BottomNav active="home" />
   </main>
 </template>
