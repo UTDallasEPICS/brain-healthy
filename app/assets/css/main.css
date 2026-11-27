@@ -1,8 +1,33 @@
 @import 'tailwindcss';
 @import '@nuxt/ui';
 
+@theme static {
+  --font-sans: 'Space Mono', ui-monospace, monospace; 
+
+  --color-ink: #2b2d42; 
+  --color-navy: #202a57; 
+  --color-navy-light: #324987; 
+  --color-cream: #fff8ea; 
+  --color-lavender: #e3d7ef; 
+  --color-grape: #b08bd1; 
+  --color-sky: #7fa7d6; 
+  --color-sky-light: #a8cbe6; 
+  --color-leaf: #8fb8a6; 
+  --color-leaf-dark: #5f8f7c; 
+  --color-sun: #f0c14b; 
+  --color-sun-light: #f7d58a; 
+  --color-cloud: #dcdcdc; 
+  --color-blush: #f4b6c2; 
+}
+
+:root,
+.dark {
+  --ui-primary: var(--color-leaf);
+  --ui-secondary: var(--color-grape);
+}
+
 :root {
-  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-sans);
   color: #243653;
   background: #f4f8fa;
 }

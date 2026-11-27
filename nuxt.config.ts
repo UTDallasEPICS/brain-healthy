@@ -4,6 +4,10 @@ export default defineNuxtConfig({
   devtools: { enabled: false },
   modules: ['@nuxt/ui', '@nuxt/image', '@nuxt/eslint'],
   css: ['./assets/css/main.css'],
+  icon: {
+    serverBundle: { collections: ['lucide'] },
+    clientBundle: { scan: true },
+  },
   // Prettier owns formatting; ESLint handles logic only (no stylistic rules).
   eslint: {
     config: {

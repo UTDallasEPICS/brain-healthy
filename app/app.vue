@@ -22,6 +22,8 @@
         </button>
       </nav>
     </header>
-    <NuxtPage />
+    <NuxtLayout>
+      <NuxtPage />
+    </NuxtLayout>
   </UApp>
 </template>
