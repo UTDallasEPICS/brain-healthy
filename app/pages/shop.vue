@@ -1,88 +1,163 @@
 <script setup lang="ts">
-  type Decoration = {
-    id: string
-    name: string
-    description: string
-    priceCoins: number
-    assetKey: string
-  }
+  import ShopItemTile from '../components/shop/ShopItemTile.vue'
+  import type { ShopDecoration } from '../types/shop'
+
   const {
     data: shop,
     pending,
-    error,
+    error: loadError,
     refresh,
-  } = await useFetch<{ coins: number; decorations: Decoration[] }>('/api/decorations')
-  const notice = ref('')
-  const buying = ref<string | null>(null)
-  function assetImage(assetKey: string) {
-    const file =
-      assetKey === 'decor/plant-sunny'
-        ? 'plant-sunny'
-        : assetKey === 'decor/lamp-reading'
-          ? 'lamp-reading'
-          : assetKey === 'decor/rug-cloud'
-            ? 'rug-cloud'
-            : 'plant-sunny'
-    return `/decor/${file}.svg`
-  }
-  function errorText(cause: unknown) {
-    const failure = cause as { data?: { statusMessage?: string }; message?: string }
-    return failure?.data?.statusMessage ?? failure?.message ?? 'Purchase failed. Please try again.'
+  } = await useFetch<{ coins: number; decorations: ShopDecoration[] }>('/api/decorations')
+  const activeTab = ref<'home' | 'avatar'>('home')
+  const selectedItem = ref<ShopDecoration | null>(null)
+  const purchaseOpen = ref(false)
+  const purchaseBusy = ref(false)
+  const purchaseError = ref('')
+  const purchaseSuccess = ref('')
+
+  const avatarItems: ShopDecoration[] = []
+  const displayedItems = computed(() =>
+    activeTab.value === 'home' ? (shop.value?.decorations ?? []) : avatarItems
+  )
+
+  function selectItem(item: ShopDecoration) {
+    selectedItem.value = item
+    purchaseError.value = ''
+    purchaseSuccess.value = ''
+    purchaseOpen.value = true
   }
 
-  async function buy(item: Decoration) {
-    buying.value = item.id
-    notice.value = ''
+  function closePurchase(open: boolean) {
+    purchaseOpen.value = open
+    if (!open && !purchaseBusy.value) {
+      purchaseError.value = ''
+      purchaseSuccess.value = ''
+    }
+  }
+
+  function errorText(cause: unknown) {
+    const failure = cause as {
+      data?: { statusMessage?: string }
+      statusMessage?: string
+      message?: string
+    }
+    const message = failure.data?.statusMessage ?? failure.statusMessage ?? failure.message
+    if (message?.toLowerCase().includes('already owned')) {
+      return 'You already have this item in your inventory.'
+    }
+    if (message?.toLowerCase().includes('insufficient coins')) {
+      return 'You don’t have enough coins for this item yet.'
+    }
+    return message ?? 'We couldn’t complete your purchase. Please try again.'
+  }
+
+  async function confirmPurchase() {
+    if (!selectedItem.value || !shop.value || purchaseBusy.value) return
+    if (shop.value.coins < selectedItem.value.priceCoins) {
+      purchaseError.value = 'You don’t have enough coins for this item yet.'
+      return
+    }
+
+    purchaseBusy.value = true
+    purchaseError.value = ''
     try {
-      await $fetch(`/api/decorations/${item.id}/purchase`, { method: 'POST' })
-      notice.value = `${item.name} added to your inventory!`
+      await $fetch(`/api/decorations/${selectedItem.value.id}/purchase`, { method: 'POST' })
       await Promise.all([refresh(), refreshNuxtData(['/api/house', '/api/decorations/inventory'])])
+      purchaseSuccess.value =
+        'Your coin balance is updated and the item is ready in your inventory.'
     } catch (cause) {
-      notice.value = errorText(cause)
+      purchaseError.value = errorText(cause)
     } finally {
-      buying.value = null
+      purchaseBusy.value = false
     }
   }
 </script>
 
 <template>
-  <main class="play-page">
-    <NuxtLink to="/" class="back-link">← Back to Home</NuxtLink>
-    <section class="page-intro">
-      <span class="coin-pill">{{ shop?.coins ?? 0 }} coins</span>
-      <p class="eyebrow">MAKE IT YOURS</p>
-      <h1>Little things for your home</h1>
-      <p>Pick something that makes your cozy corner feel more like you.</p>
-    </section>
-    <p v-if="notice" class="notice" role="status">{{ notice }}</p>
-    <p v-if="error" class="notice error">Shop could not load. Please refresh and try again.</p>
-    <div v-if="pending" class="shop-grid">
-      <div v-for="n in 3" :key="n" class="shop-card skeleton" />
+  <main class="play-page shop-page">
+    <header class="shop-banner">
+      <div class="shop-scene" aria-hidden="true">
+        <div class="shop-awning"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="shop-window">
+          <span class="shop-window-plant">♧</span><span class="shop-window-light">✦</span>
+        </div>
+        <div class="shop-door"><span>OPEN</span></div>
+        <span class="shop-side-plant">♣</span>
+        <div class="shop-sign">SHOP</div>
+      </div>
+      <div class="shop-header-row">
+        <div>
+          <p class="eyebrow">A LITTLE PLACE TO BROWSE</p>
+          <h1>Find something lovely</h1>
+        </div>
+        <div class="shop-balance" aria-label="Coin balance">
+          <span aria-hidden="true" class="balance-coin">●</span>
+          <span>{{ shop?.coins ?? 0 }}</span>
+          <small>coins</small>
+        </div>
+      </div>
+    </header>
+
+    <div class="shop-tabs" role="tablist" aria-label="Shop categories">
+      <button
+        class="shop-tab"
+        :class="{ active: activeTab === 'home' }"
+        role="tab"
+        :aria-selected="activeTab === 'home'"
+        @click="activeTab = 'home'"
+      >
+        Home
+      </button>
+      <button
+        class="shop-tab"
+        :class="{ active: activeTab === 'avatar' }"
+        role="tab"
+        :aria-selected="activeTab === 'avatar'"
+        @click="activeTab = 'avatar'"
+      >
+        Avatar
+      </button>
     </div>
-    <section v-else class="shop-grid" aria-label="Decorations for sale">
-      <article v-for="(item, index) in shop?.decorations ?? []" :key="item.id" class="shop-card">
-        <div class="item-art" :class="`art-${index % 3}`">
-          <img :src="assetImage(item.assetKey)" :alt="item.name" />
-        </div>
-        <div class="item-copy">
-          <p class="item-type">A LITTLE DECOR</p>
-          <h2>{{ item.name }}</h2>
-          <p>{{ item.description }}</p>
-          <div class="item-buy">
-            <strong>🪙 {{ item.priceCoins }}</strong
-            ><button
-              class="soft-button"
-              :disabled="buying === item.id || (shop?.coins ?? 0) < item.priceCoins"
-              @click="buy(item)"
-            >
-              {{ buying === item.id ? 'Adding…' : 'Add to home' }}
-            </button>
-          </div>
-        </div>
-      </article>
-      <p v-if="!shop?.decorations.length" class="empty">
-        The shop is getting ready. Check back soon!
-      </p>
+
+    <p v-if="loadError" class="notice error" role="alert">
+      The shop couldn’t load. Refresh the page to try again.
+    </p>
+
+    <section v-if="activeTab === 'avatar'" class="avatar-shop-empty">
+      <div class="avatar-shop-art" aria-hidden="true">✦</div>
+      <p class="eyebrow">COMING SOON</p>
+      <h2>Avatar accessories are on their way</h2>
+      <p>For now, browse cozy decorations for your home.</p>
+      <button class="soft-button" @click="activeTab = 'home'">Browse Home items</button>
     </section>
+
+    <section v-else-if="pending" class="shop-item-grid" aria-label="Loading shop items">
+      <div v-for="index in 6" :key="index" class="shop-item-skeleton skeleton" />
+    </section>
+
+    <section v-else class="shop-item-grid" aria-label="Home decorations">
+      <ShopItemTile
+        v-for="item in displayedItems"
+        :key="item.id"
+        :item="item"
+        @select="selectItem"
+      />
+      <div v-if="!displayedItems.length" class="shop-empty-state">
+        <h2>The shelves are being stocked</h2>
+        <p>Check back soon for more home decorations.</p>
+      </div>
+    </section>
+
+    <PurchaseModal
+      :open="purchaseOpen"
+      :item="selectedItem"
+      :coins="shop?.coins ?? 0"
+      :busy="purchaseBusy"
+      :error="purchaseError"
+      :success="purchaseSuccess"
+      @update:open="closePurchase"
+      @confirm="confirmPurchase"
+    />
+    <BottomNav active="shop" />
   </main>
 </template>

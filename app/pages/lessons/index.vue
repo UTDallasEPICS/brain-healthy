@@ -6,7 +6,7 @@
 </script>
 
 <template>
-  <UContainer class="max-w-3xl space-y-6 py-8">
+  <main class="play-page mock-page lessons-mock">
     <div class="flex items-center justify-between">
       <h1 class="text-2xl font-bold">Lessons</h1>
       <UButton to="/lessons/completed" variant="ghost" label="Completed lessons" />
@@ -34,5 +34,6 @@
         <UBadge v-if="lesson.completed" color="success" variant="subtle" label="Completed" />
       </NuxtLink>
     </div>
-  </UContainer>
+    <BottomNav active="lessons" />
+  </main>
 </template>
