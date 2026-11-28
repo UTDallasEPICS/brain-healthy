@@ -23,17 +23,18 @@
   // Shared look for the round header buttons (test console, theme, shop) so
   // they all get the same pointer cursor and hover lift.
   const iconButton =
-    'border-outline bg-surface text-fg grid size-10 cursor-pointer place-items-center rounded-full border-2 transition-transform hover:-translate-y-0.5'
-
+    'border-outline bg-surface text-fg grid size-10 shrink-0 cursor-pointer place-items-center rounded-full border-2 transition-transform hover:-translate-y-0.5'
   function toggleTheme() {
     colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'
   }
 </script>
 
 <template>
-  <header class="mx-auto flex w-full max-w-[1120px] items-center gap-2 px-4 pt-5 pb-3">
+  <header
+    class="mx-auto flex w-full max-w-[1120px] items-center gap-1.5 px-3 pt-5 pb-3 sm:gap-2 sm:px-4"
+  >
     <h1
-      class="border-outline text-fg bg-surface-title min-w-30 rounded-md border-2 px-4 py-1.5 text-center text-xl shadow-[2px_3px_0_var(--color-shadow)]"
+      class="border-outline text-fg bg-surface-title min-w-0 truncate rounded-md border-2 px-3 py-1.5 text-center text-xl shadow-[2px_3px_0_var(--color-shadow)] sm:min-w-30 sm:px-4"
     >
       {{ title }}
     </h1>
