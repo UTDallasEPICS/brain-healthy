@@ -9,9 +9,15 @@
   }
   type House = { name: string; coins: number; decorations: HouseItem[] }
   type OwnedDecoration = { id: string; name: string; assetKey: string; equipped: boolean }
-  const { data: house, pending, error, refresh: refreshHouse } = await useFetch<House>('/api/house')
+  const {
+    data: house,
+    pending,
+    error,
+    refresh: refreshHouse,
+  } = await useFetch<House>('/api/house', { key: HOUSE_KEY })
   const { data: inventory, refresh: refreshInventory } = await useFetch<OwnedDecoration[]>(
-    '/api/decorations/inventory'
+    '/api/decorations/inventory',
+    { key: INVENTORY_KEY }
   )
   const placing = ref<string | null>(null)
   const placementNotice = ref('')
@@ -122,7 +128,6 @@
 <template>
   <main class="play-page home-page">
     <section class="welcome">
-      <span class="coin-pill">{{ house?.coins ?? 0 }} coins</span>
       <p class="eyebrow">A LITTLE SPACE TO GROW</p>
       <h1>Welcome home<span>.</span></h1>
       <p>Your cozy corner is ready whenever you are.</p>

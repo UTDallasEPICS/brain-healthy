@@ -6,8 +6,7 @@ import { user } from '~~/server/db/schema'
 // API paths that must stay reachable without a session. Better Auth's own
 // endpoints (sign-up, sign-in, verify-email, get-session, token, jwks, etc.)
 // live under /api/auth.
-const PUBLIC_PREFIXES = ['/api/auth', '/api/health']
-
+const PUBLIC_PREFIXES = ['/api/auth', '/api/health', '/api/_nuxt_icon']
 // Make the resolved session available to every downstream handler so routes
 // can read event.context.user / event.context.session instead of calling
 // auth.api.getSession() themselves. `session` is only set for cookie-based

@@ -2,6 +2,8 @@
   import { z } from 'zod'
   import { authClient } from '../utils/auth-client'
 
+  definePageMeta({ layout: false })
+
   const toast = useToast()
   const isSignUp = ref(false)
 

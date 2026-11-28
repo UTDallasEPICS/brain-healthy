@@ -71,6 +71,7 @@
   }
 
   const toast = useToast()
+  const { setBalance: setSharedBalance } = useCoinBalance()
 
   // ---- API + request log -------------------------------------------------
 
@@ -163,7 +164,11 @@
       api<Quest[]>('GET', questsPath, undefined, { quiet: true }),
       api<HistoryEntry[]>('GET', '/api/quests/history', undefined, { quiet: true }),
     ])
-    if (b.ok) balance.value = b.data.balance
+    if (b.ok) {
+      balance.value = b.data.balance
+      // Keep the header's piggy bank in step with what this console just did.
+      setSharedBalance(b.data.balance)
+    }
     if (t.ok) transactions.value = t.data
     if (r.ok) {
       rewards.value = r.data

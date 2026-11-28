@@ -3,6 +3,7 @@
   const lessonId = route.params.id as string
 
   const { data: lesson, refresh } = await useFetch(`/api/lessons/${lessonId}`)
+  const { refreshBalance } = useCoinBalance()
 
   const answers = ref<Record<string, string>>({})
   interface QuizResult {
@@ -36,7 +37,7 @@
         body: { answers: answers.value },
       })
       result.value = data
-      if (data.passed) await refresh()
+      if (data.passed) await Promise.all([refresh(), data.coinsEarned ? refreshBalance() : null])
     } finally {
       submitting.value = false
     }
@@ -50,7 +51,7 @@
 
 <template>
   <UContainer v-if="lesson" class="max-w-3xl space-y-6 py-8">
-    <UButton to="/lessons" variant="ghost" icon="i-heroicons-arrow-left" label="Lessons" />
+    <UButton to="/quests" variant="ghost" icon="i-lucide-arrow-left" label="Quests" />
 
     <div>
       <h1 class="text-2xl font-bold">{{ lesson.title }}</h1>
@@ -121,7 +122,7 @@
         />
         <div class="flex gap-2">
           <UButton v-if="!result.passed" label="Retry quiz" @click="retry" />
-          <UButton v-else to="/lessons" label="Back to lessons" />
+          <UButton v-else to="/quests" label="Back to quests" />
         </div>
       </div>
       <UButton

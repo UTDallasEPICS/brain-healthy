@@ -1,54 +1,69 @@
 // @vitest-environment nuxt
-//
-// A component test for the application shell (app/app.vue). It renders the real
-// component in the Nuxt environment, stubs out page routing, and proves the two
-// always-present pieces of the shell work: the brand link points home, and the
-// theme toggle is reachable by assistive technology.
-//
-// This test never opens the database, reads an env file, sends email, or makes a
-// network request. Those integrations are intentionally out of scope for the
-// baseline (see docs/testing.md).
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { mountSuspended } from '@nuxt/test-utils/runtime'
-import App from '../../app/app.vue'
+import { describe, it, expect } from 'vitest'
+import { nextTick } from 'vue'
+import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
+import AppHeader from '../../app/components/app/Header.vue'
+import AppFooter from '../../app/components/app/Footer.vue'
+import { useCoinBalance } from '../../app/composables/useCoinBalance'
 
-describe('application shell (app.vue)', () => {
-  let fetchSpy: ReturnType<typeof vi.spyOn>
+// Stands in for the real ledger behind GET /api/coins/balance.
+let serverBalance = 12
+registerEndpoint('/api/coins/balance', () => ({ balance: serverBalance }))
 
-  beforeEach(() => {
-    // Arrange: watch the global fetch so each test can prove the shell renders
-    // without reaching the network. spyOn keeps the original implementation, so
-    // a real request would still be recorded (and fail the assertion below).
-    fetchSpy = vi.spyOn(globalThis, 'fetch')
+describe('app header', () => {
+  it('shows the page name from the web address', async () => {
+    const wrapper = await mountSuspended(AppHeader, { route: '/auth' })
+
+    expect(wrapper.get('h1').text()).toBe('Auth')
   })
 
-  afterEach(() => {
-    fetchSpy.mockRestore()
+  it('links to the shop', async () => {
+    const wrapper = await mountSuspended(AppHeader)
+
+    expect(wrapper.get('[aria-label="Shop"]').attributes('href')).toBe('/shop')
   })
 
-  it('links the brand to the home route', async () => {
-    // Act: mount the shell, stubbing <NuxtPage /> so no page/route is loaded.
-    const wrapper = await mountSuspended(App, {
-      global: { stubs: { NuxtPage: true } },
-    })
+  it('has an accessible "Toggle Theme" button', async () => {
+    const wrapper = await mountSuspended(AppHeader)
 
-    // Assert: the app brand shows "Belonging Blocks" and targets "/".
-    const brandLink = wrapper.get('a')
-    expect(brandLink.text()).toContain('Belonging Blocks')
-    expect(brandLink.attributes('href')).toBe('/')
-    expect(fetchSpy).not.toHaveBeenCalled()
+    expect(wrapper.find('[aria-label="Toggle Theme"]').exists()).toBe(true)
+  })
+})
+
+describe('piggy bank coin balance', () => {
+  it('shows the balance from the server with the currency label', async () => {
+    serverBalance = 12
+    const wrapper = await mountSuspended(AppHeader)
+    const piggyBank = wrapper.get('[data-testid="coin-balance"]')
+
+    expect(piggyBank.text()).toBe('12 coins')
+    expect(piggyBank.attributes('aria-label')).toBe('12 coins')
   })
 
-  it('exposes an accessible "Toggle Theme" control', async () => {
-    // Act
-    const wrapper = await mountSuspended(App, {
-      global: { stubs: { NuxtPage: true } },
-    })
+  it('updates right away when coins are earned or spent', async () => {
+    serverBalance = 12
+    const wrapper = await mountSuspended(AppHeader)
+    const { refreshBalance, setBalance } = useCoinBalance()
 
-    // Assert: the theme toggle is present and labelled for screen readers.
-    const toggle = wrapper.find('[aria-label="Toggle Theme"]')
-    expect(toggle.exists()).toBe(true)
-    expect(fetchSpy).not.toHaveBeenCalled()
+    // e.g. after a purchase: the page re-reads the balance from the server.
+    serverBalance = 7
+    await refreshBalance()
+    await nextTick()
+    expect(wrapper.get('[data-testid="coin-balance"]').text()).toBe('7 coins')
+
+    // e.g. after a quest: the server already sent the new balance.
+    setBalance(1)
+    await nextTick()
+    expect(wrapper.get('[data-testid="coin-balance"]').text()).toBe('1 coin')
+  })
+})
+
+describe('app footer', () => {
+  it('has a button for each main page', async () => {
+    const wrapper = await mountSuspended(AppFooter)
+    const links = wrapper.findAll('nav a').map((link) => link.attributes('href'))
+
+    expect(links).toEqual(['/', '/avatar', '/friends', '/quests', '/inventory'])
   })
 })

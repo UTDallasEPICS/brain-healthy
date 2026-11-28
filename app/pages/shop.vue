@@ -10,8 +10,8 @@
     data: shop,
     pending,
     error,
-    refresh,
   } = await useFetch<{ coins: number; decorations: Decoration[] }>('/api/decorations')
+  const { balance, refreshBalance } = useCoinBalance()
   const notice = ref('')
   const buying = ref<string | null>(null)
   function assetImage(assetKey: string) {
@@ -36,9 +36,11 @@
     try {
       await $fetch(`/api/decorations/${item.id}/purchase`, { method: 'POST' })
       notice.value = `${item.name} added to your inventory!`
-      await Promise.all([refresh(), refreshNuxtData(['/api/house', '/api/decorations/inventory'])])
+      await Promise.all([refreshBalance(), refreshNuxtData([HOUSE_KEY, INVENTORY_KEY])])
     } catch (cause) {
       notice.value = errorText(cause)
+      // e.g. "Insufficient coins": the balance shown may have been out of date.
+      await refreshBalance()
     } finally {
       buying.value = null
     }
@@ -49,7 +51,6 @@
   <main class="play-page">
     <NuxtLink to="/" class="back-link">← Back to Home</NuxtLink>
     <section class="page-intro">
-      <span class="coin-pill">{{ shop?.coins ?? 0 }} coins</span>
       <p class="eyebrow">MAKE IT YOURS</p>
       <h1>Little things for your home</h1>
       <p>Pick something that makes your cozy corner feel more like you.</p>
@@ -72,7 +73,7 @@
             <strong>🪙 {{ item.priceCoins }}</strong
             ><button
               class="soft-button"
-              :disabled="buying === item.id || (shop?.coins ?? 0) < item.priceCoins"
+              :disabled="buying === item.id || balance < item.priceCoins"
               @click="buy(item)"
             >
               {{ buying === item.id ? 'Adding…' : 'Add to home' }}
