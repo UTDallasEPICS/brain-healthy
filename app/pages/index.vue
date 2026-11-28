@@ -1,4 +1,55 @@
 <script setup lang="ts">
+  type House = {
+    name: string
+    baseAssetKey: string
+    coins: number
+    decorations: {
+      id: string
+      name: string
+      assetKey: string
+      positionX: number | null
+      positionY: number | null
+      rotation: number | null
+    }[]
+  }
+
+  const { data: house, error } = await useFetch<House>('/api/house', { key: HOUSE_KEY })
+
+  const { setBalance } = useCoinBalance()
+  watchEffect(() => {
+    if (house.value) setBalance(house.value.coins)
+  })
+</script>
+
+<template>
+  <div>
+    <div class="bg-sky-light dark:bg-navy fixed inset-0 -z-10" aria-hidden="true">
+      <UIcon name="i-lucide-cloud" class="absolute top-24 right-4 size-20 text-white" />
+      <UIcon name="i-lucide-cloud" class="absolute bottom-32 left-2 size-16 text-white" />
+    </div>
+
+    <div class="mx-auto max-w-xl space-y-6 px-4 py-8">
+      <p v-if="error" class="border-outline bg-blush text-ink rounded-xl border-2 p-3 text-sm">
+        Your home could not load. Please refresh and try again.
+      </p>
+
+      <HomeRoomView :decorations="house?.decorations" :room-asset="house?.baseAssetKey">
+        <template #avatar>
+          <div
+            class="border-outline bg-lavender text-ink grid aspect-square w-full place-items-center rounded-full border-2"
+            title="Your avatar"
+          >
+            <UIcon name="i-lucide-brain-circuit" class="size-3/5" />
+          </div>
+        </template>
+      </HomeRoomView>
+
+      <BaseButton label="Decorate" to="/decorate" color="blue" icon="i-lucide-paintbrush" />
+    </div>
+  </div>
+</template>
+<!--
+<script setup lang="ts">
   type HouseItem = {
     id: string
     name: string
@@ -222,3 +273,4 @@
     </section>
   </main>
 </template>
+-->

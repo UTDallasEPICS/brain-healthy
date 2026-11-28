@@ -1,6 +1,6 @@
 <script setup lang="ts">
   const props = withDefaults(
-    defineProps<{ color?: 'green' | 'yellow' | 'gray' | 'purple' | 'cream' }>(),
+    defineProps<{ color?: 'green' | 'yellow' | 'gray' | 'purple' | 'cream' | 'blue' }>(),
     { color: 'green' }
   )
 
@@ -10,6 +10,7 @@
     green: '[--btn:var(--color-leaf)] text-ink',
     yellow: '[--btn:var(--color-sun)] text-ink',
     purple: '[--btn:var(--color-grape)] text-ink',
+    blue: '[--btn:var(--color-sky)] text-ink',
     gray: '[--btn:var(--color-surface-muted)] text-fg',
     cream: '[--btn:var(--color-surface)] text-fg',
   }
