@@ -23,7 +23,7 @@
 <template>
   <div
     :class="[
-      'border-ink bg-lavender text-ink grid shrink-0 place-items-center overflow-hidden rounded-full border-2 font-bold',
+      'border-outline bg-surface-alt text-fg grid shrink-0 place-items-center overflow-hidden rounded-full border-2 font-bold',
       sizes[props.size],
     ]"
   >

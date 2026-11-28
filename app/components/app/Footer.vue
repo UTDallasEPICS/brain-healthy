@@ -16,7 +16,7 @@
 <template>
   <nav aria-label="Main navigation" class="sticky bottom-0 z-30 px-3 pb-3">
     <ul
-      class="border-ink bg-navy mx-auto flex max-w-md justify-around rounded-3xl border-2 px-2 py-3"
+      class="border-outline bg-navy mx-auto flex max-w-md justify-around rounded-3xl border-2 px-2 py-3"
     >
       <li v-for="link in links" :key="link.to">
         <NuxtLink

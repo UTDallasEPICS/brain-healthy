@@ -22,12 +22,13 @@
     :close="{
       color: 'neutral',
       variant: 'ghost',
-      class: 'border-ink bg-cream text-ink hover:bg-blush rounded-full border-2',
+      class:
+        'border-outline bg-surface text-fg hover:bg-blush hover:text-ink rounded-full border-2',
     }"
     :ui="{
       content:
-        'border-ink bg-cream text-ink max-w-sm divide-y-0 overflow-hidden rounded-2xl border-2 ring-0',
-      header: `border-ink min-h-0 border-b-2 px-4 py-3 ${colors[props.color]}`,
+        'border-outline bg-surface text-fg max-w-sm divide-y-0 overflow-hidden rounded-2xl border-2 ring-0',
+      header: `border-outline min-h-0 border-b-2 px-4 py-3 ${colors[props.color]}`,
       wrapper: 'flex-1 px-8 text-center',
       title: 'text-cream font-bold',
       description: 'sr-only',

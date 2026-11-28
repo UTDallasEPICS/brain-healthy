@@ -50,7 +50,7 @@
       <h2 class="text-lg font-bold">Cards</h2>
       <BaseCard class="flex items-center gap-3">
         <div
-          class="border-ink bg-sun grid size-11 shrink-0 place-items-center rounded-full border-2"
+          class="border-outline bg-sun text-ink grid size-11 shrink-0 place-items-center rounded-full border-2"
         >
           <UIcon name="i-lucide-sun" class="size-6" />
         </div>
@@ -110,7 +110,7 @@
       <BaseButton label="Open popup" color="purple" @click="showPopup = true" />
       <BaseModal v-model:open="showPopup" title="Mark as done?" color="navy">
         <div
-          class="border-ink bg-sun mx-auto mb-3 grid size-14 place-items-center rounded-full border-2"
+          class="border-outline bg-sun text-ink mx-auto mb-3 grid size-14 place-items-center rounded-full border-2"
         >
           <UIcon name="i-lucide-sun" class="size-7" />
         </div>

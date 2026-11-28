@@ -11,7 +11,7 @@
     :disabled="disabled"
     size="xl"
     :ui="{
-      base: 'border-ink rounded-md border-2 bg-white ring-0',
+      base: 'border-outline bg-field rounded-md border-2 ring-0',
       indicator: 'bg-leaf',
       icon: 'text-ink',
       label: checked ? 'font-bold line-through opacity-60' : 'font-bold',

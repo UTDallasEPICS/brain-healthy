@@ -7,7 +7,7 @@
 <template>
   <UCollapsible
     v-model:open="open"
-    class="border-ink bg-cream text-ink rounded-2xl border-2"
+    class="border-outline bg-surface text-fg rounded-2xl border-2"
     :ui="{ content: 'px-4 pb-4' }"
   >
     <button type="button" class="flex w-full items-center gap-3 p-4 text-left">

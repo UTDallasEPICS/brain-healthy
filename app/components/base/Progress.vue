@@ -15,7 +15,7 @@
     :aria-valuenow="value"
     aria-valuemin="0"
     :aria-valuemax="max"
-    class="border-ink h-3.5 w-full overflow-hidden rounded-full border-2 bg-white"
+    class="border-outline bg-field h-3.5 w-full overflow-hidden rounded-full border-2"
   >
     <div
       :class="['h-full transition-all', color === 'green' ? 'bg-leaf' : 'bg-sky']"

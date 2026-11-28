@@ -3,16 +3,17 @@
     color: 'lavender',
   })
 
+  // Colour names match the light-mode design; each maps to a theme token.
   const colors = {
-    lavender: 'bg-lavender',
-    cream: 'bg-cream',
-    white: 'bg-white',
-    gray: 'bg-cloud',
+    lavender: 'bg-surface-alt',
+    cream: 'bg-surface',
+    white: 'bg-surface-raised',
+    gray: 'bg-surface-muted',
   }
 </script>
 
 <template>
-  <div :class="['border-ink text-ink rounded-2xl border-2 p-4', colors[props.color]]">
+  <div :class="['border-outline text-fg rounded-2xl border-2 p-4', colors[props.color]]">
     <slot />
   </div>
 </template>

@@ -8,7 +8,8 @@
     multiline?: boolean
   }>()
 
-  const boxStyle = 'border-ink text-ink rounded-xl border-2 bg-white ring-0 placeholder:text-ink/50'
+  const boxStyle =
+    'border-outline text-fg bg-field rounded-xl border-2 ring-0 placeholder:text-fg/50'
 </script>
 
 <template>
@@ -28,7 +29,7 @@
       :leading-icon="icon"
       size="lg"
       class="w-full"
-      :ui="{ base: boxStyle, leadingIcon: 'text-ink' }"
+      :ui="{ base: boxStyle, leadingIcon: 'text-fg' }"
     />
   </UFormField>
 </template>

@@ -1,23 +1,51 @@
 @import 'tailwindcss';
 @import '@nuxt/ui';
 
+/*
+ * Theme architecture
+ *
+ * 1. Palette — the fixed Figma colours (ink, cream, sun, leaf…). They are the
+ *    same in both themes and are used for accents: button fills, badge tints,
+ *    the active nav pill, icons.
+ * 2. Semantic tokens — what neutral UI (surfaces, text, outlines) is painted
+ *    with. Components use these (`bg-surface`, `text-fg`, `border-outline`…),
+ *    never raw cream/ink/white. Their light values below are the palette
+ *    colours the design was built with; the `.dark` block swaps them, so every
+ *    component re-themes the moment Nuxt UI toggles the `dark` class on <html>.
+ * 3. Page tokens (--page-*, --card-*…) — the same idea for the hand-written
+ *    CSS of the home and shop pages further down.
+ *
+ * Accent tints for badges and status banners live in app/utils/tones.ts.
+ */
 @theme static {
-  --font-sans: 'Space Mono', ui-monospace, monospace; 
+  --font-sans: 'Space Mono', ui-monospace, monospace;
 
-  --color-ink: #2b2d42; 
-  --color-navy: #202a57; 
-  --color-navy-light: #324987; 
-  --color-cream: #fff8ea; 
-  --color-lavender: #e3d7ef; 
-  --color-grape: #b08bd1; 
-  --color-sky: #7fa7d6; 
-  --color-sky-light: #a8cbe6; 
-  --color-leaf: #8fb8a6; 
-  --color-leaf-dark: #5f8f7c; 
-  --color-sun: #f0c14b; 
-  --color-sun-light: #f7d58a; 
-  --color-cloud: #dcdcdc; 
-  --color-blush: #f4b6c2; 
+  --color-ink: #2b2d42;
+  --color-navy: #202a57;
+  --color-navy-light: #324987;
+  --color-cream: #fff8ea;
+  --color-lavender: #e3d7ef;
+  --color-grape: #b08bd1;
+  --color-sky: #7fa7d6;
+  --color-sky-light: #a8cbe6;
+  --color-leaf: #8fb8a6;
+  --color-leaf-dark: #5f8f7c;
+  --color-sun: #f0c14b;
+  --color-sun-light: #f7d58a;
+  --color-cloud: #dcdcdc;
+  --color-blush: #f4b6c2;
+
+  /* Semantic tokens (light values; dark values are in `.dark` below). */
+  --color-page: #f4f8fa; /* app background */
+  --color-surface: var(--color-cream); /* default card, chip and icon-button fill */
+  --color-surface-alt: var(--color-lavender); /* highlighted card ("Up next") */
+  --color-surface-muted: var(--color-cloud); /* completed / placeholder fill */
+  --color-surface-raised: #ffffff; /* white card */
+  --color-surface-title: #f1f1f4; /* header page-title chip */
+  --color-field: #ffffff; /* inputs, checkboxes, progress tracks */
+  --color-fg: var(--color-ink); /* text and icons on surfaces */
+  --color-outline: var(--color-ink); /* the chunky 2px outlines and button "lip" */
+  --color-shadow: rgb(30 42 90 / 0.25); /* soft offset shadows */
 }
 
 :root,
@@ -27,78 +55,117 @@
 }
 
 :root {
+  --page-text: #243653;
+  --body-text: var(--ui-text); /* Nuxt UI's default body colour */
+  --play-text: #263753;
+  --play-glow: #e6f3f4;
+  --play-bg: #f5f8fa;
+  --heading: #243653;
+  --text-muted: #75849a;
+  --text-subtle: #8290a1;
+  --eyebrow: #77a39f;
+  --eyebrow-soft: #83a4a0;
+  --link: #426e91;
+  --price: #876321;
+  --card-bg: var(--color-surface-raised);
+  --card-border: #e6ecec;
+  --card-shadow: #49657b0b;
+  --soft-side-bg: #edf6f1;
+  --inventory-item-bg: #f6f9f8;
+  --room-bg: #d9eff0;
+  --room-frame: #fff;
+  --room-inset: #e5ecec;
+  --room-art-filter: none;
+  --room-message: #745b50;
+  --room-message-shadow: none;
+  --primary-bg: #426e91;
+  --primary-fg: #fff;
+  --soft-button-bg: #e8f3ef;
+  --soft-button-fg: #376a70;
+  --art-0: #e5f3f3;
+  --art-1: #f8eddb;
+  --art-2: #ece9f7;
+  --notice-bg: #e8f5ef;
+  --notice-fg: #356964;
+  --notice-error-bg: #fff0ed;
+  --notice-error-fg: #9a4e4e;
+  --skeleton-base: var(--color-surface-raised);
+  --skeleton-shine: #f1f5f5;
+}
+
+/* Dark mode: Nuxt UI puts the `dark` class on <html>. */
+.dark {
+  --color-page: #0f172a;
+  --color-surface: #1e293b;
+  --color-surface-alt: #2c2a47;
+  --color-surface-muted: #172033;
+  --color-surface-raised: #1e293b;
+  --color-surface-title: #263449;
+  --color-field: #0b1324;
+  --color-fg: var(--color-cream);
+  --color-outline: #7d8bb5;
+  --color-shadow: rgb(0 0 0 / 0.45);
+
+  --page-text: #e2e8f0;
+  --body-text: #e2e8f0;
+  --play-text: #e2e8f0;
+  --play-glow: #16304a;
+  --play-bg: var(--color-page);
+  --heading: #f1f5f9;
+  --text-muted: #94a3b8;
+  --text-subtle: #94a3b8;
+  --eyebrow: #7fc4bd;
+  --eyebrow-soft: #7fc4bd;
+  --link: #8fc1e3;
+  --price: #f6d98a;
+  --card-border: #26354d;
+  --card-shadow: #00000040;
+  --soft-side-bg: #1b3a36;
+  --inventory-item-bg: #263449;
+  --room-bg: #1c3a45;
+  --room-frame: #334155;
+  --room-inset: #26354d;
+  --room-art-filter: brightness(0.72) saturate(0.9);
+  --room-message: #f1e3d8;
+  --room-message-shadow: 0 1px 4px #000a;
+  --primary-bg: #5a95bf;
+  --primary-fg: #0b1220;
+  --soft-button-bg: #264a49;
+  --soft-button-fg: #a7e0da;
+  --art-0: #1d3a42;
+  --art-1: #3a3220;
+  --art-2: #2c2a47;
+  --notice-bg: #173d38;
+  --notice-fg: #a7e8d8;
+  --notice-error-bg: #43201f;
+  --notice-error-fg: #fca5a5;
+  --skeleton-shine: #2b3a52;
+}
+
+/* Tailwind v4 dropped the pointer cursor from buttons; restore it app-wide. */
+@layer base {
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']) {
+    cursor: pointer;
+  }
+}
+
+:root {
   font-family: var(--font-sans);
-  color: #243653;
-  background: #f4f8fa;
+  color: var(--page-text);
+  background: var(--color-page);
 }
 body {
   margin: 0;
-  background: #f4f8fa;
+  color: var(--body-text);
+  background: var(--color-page);
 }
 .play-page {
   min-height: 100vh;
   padding: 0 5vw 56px;
-  color: #263753;
-  background: radial-gradient(ellipse at 80% 0%, #e6f3f4 0, transparent 35%), #f5f8fa;
-}
-.play-header {
-  max-width: 1120px;
-  height: 78px;
-  margin: auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid #e1e9eb;
-}
-.site-header {
-  max-width: 1120px;
-  height: 64px;
-  margin: 0 auto;
-  padding: 0 5vw;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid #e1e9eb;
-}
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-.header-link {
-  color: #426e91;
-  font-size: 14px;
-  font-weight: 700;
-  text-decoration: none;
-}
-.header-link:hover {
-  text-decoration: underline;
-}
-.theme-toggle {
-  width: 36px;
-  height: 36px;
-  border: 1px solid #e1e9eb;
-  border-radius: 50%;
-  background: white;
-  color: #426e91;
-  font-size: 20px;
-  cursor: pointer;
-}
-.brand {
-  color: #335d75;
-  font-size: 20px;
-  font-weight: 800;
-  text-decoration: none;
-  letter-spacing: -0.04em;
-}
-.coin-pill {
-  background: #fff6dc;
-  color: #876321;
-  border: 1px solid #f1dfa8;
-  border-radius: 99px;
-  padding: 10px 16px;
-  font-size: 14px;
-  font-weight: 750;
+  color: var(--play-text);
+  background:
+    radial-gradient(ellipse at 80% 0%, var(--play-glow) 0, transparent 35%), var(--play-bg);
 }
 .welcome,
 .page-intro {
@@ -111,7 +178,7 @@ body {
   line-height: 1.05;
   letter-spacing: -0.055em;
   margin: 8px 0 10px;
-  color: #243653;
+  color: var(--heading);
 }
 .welcome h1 span {
   color: #f2b957;
@@ -119,11 +186,11 @@ body {
 .welcome > p:last-child,
 .page-intro > p:last-child {
   margin: 0;
-  color: #75849a;
+  color: var(--text-muted);
   font-size: 16px;
 }
 .eyebrow {
-  color: #77a39f;
+  color: var(--eyebrow);
   text-transform: uppercase;
   letter-spacing: 0.16em;
   font-size: 10px;
@@ -140,10 +207,10 @@ body {
 .room-card,
 .side-card,
 .shop-card {
-  border: 1px solid #e6ecec;
+  border: 1px solid var(--card-border);
   border-radius: 24px;
-  background: #fff;
-  box-shadow: 0 16px 40px #49657b0b;
+  background: var(--card-bg);
+  box-shadow: 0 16px 40px var(--card-shadow);
 }
 .room-card {
   padding: 25px;
@@ -168,77 +235,13 @@ body {
   overflow: hidden;
   margin-top: 20px;
   border-radius: 18px;
-  background: linear-gradient(180deg, #d8eff2 0 68%, #cba98f 68% 100%);
-  border: 7px solid #fff;
-  box-shadow: inset 0 0 0 1px #e5ecec;
-}
-.room-scene:before {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: 0;
-  bottom: 0;
-  width: 7px;
-  background: #fff9;
-}
-.window {
-  position: absolute;
-  top: 25px;
-  left: 8%;
-  width: 110px;
-  height: 100px;
-  border: 8px solid #fff;
-  border-radius: 8px;
-  background: #a5d4df;
-  box-shadow: 0 4px 12px #54718320;
-  display: grid;
-  place-items: center;
-  font-size: 30px;
-}
-.shelf {
-  position: absolute;
-  top: 54%;
-  left: 8%;
-  width: 75px;
-  height: 10px;
-  border-radius: 8px;
-  background: #996d56;
-}
-.plant {
-  position: absolute;
-  left: 11%;
-  top: 42%;
-  font-size: 38px;
-}
-.couch {
-  position: absolute;
-  right: 11%;
-  bottom: 20%;
-  font-size: 90px;
-  filter: drop-shadow(0 7px 4px #72544128);
-}
-.room-rug {
-  position: absolute;
-  width: 55%;
-  height: 24%;
-  left: 23%;
-  bottom: 3%;
-  background: #f0c883;
-  border-radius: 50%;
-  opacity: 0.9;
-}
-.sleepy-star {
-  position: absolute;
-  right: 32%;
-  top: 29%;
-  font-size: 39px;
-  color: #fff4c2;
-  text-shadow: 0 3px 12px #c89945;
+  background: var(--room-bg);
+  border: 7px solid var(--room-frame);
+  box-shadow: inset 0 0 0 1px var(--room-inset);
 }
 .placed-item {
   position: absolute;
   z-index: 2;
-  font-size: 32px;
 }
 .room-message {
   position: absolute;
@@ -246,7 +249,8 @@ body {
   left: 0;
   right: 0;
   text-align: center;
-  color: #745b50;
+  color: var(--room-message);
+  text-shadow: var(--room-message-shadow);
   font-size: 12px;
   font-weight: 700;
 }
@@ -265,8 +269,8 @@ body {
     background 0.15s;
 }
 .primary-button {
-  background: #426e91;
-  color: white;
+  background: var(--primary-bg);
+  color: var(--primary-fg);
   padding: 13px 20px;
 }
 .primary-button:hover,
@@ -285,7 +289,7 @@ body {
   padding: 24px;
 }
 .side-card > p:not(.eyebrow) {
-  color: #8290a1;
+  color: var(--text-subtle);
   font-size: 14px;
   line-height: 1.6;
 }
@@ -297,8 +301,8 @@ body {
 .side-card h2 {
   font-size: 19px;
 }
-.soft-side {
-  background: #edf6f1;
+.side-card.soft-side {
+  background: var(--soft-side-bg);
 }
 .page-intro {
   margin-top: 24px;
@@ -309,7 +313,7 @@ body {
   max-width: 1120px;
   margin-left: max(0px, calc((100% - 1120px) / 2));
   margin-top: 28px;
-  color: #426e91;
+  color: var(--link);
   font-size: 14px;
   font-weight: 750;
   text-decoration: none;
@@ -332,23 +336,19 @@ body {
   height: 190px;
   display: grid;
   place-items: center;
-  background: #e5f3f3;
-}
-.item-art span {
-  font-size: 74px;
-  filter: drop-shadow(0 8px 5px #405c6728);
+  background: var(--art-0);
 }
 .art-1 {
-  background: #f8eddb;
+  background: var(--art-1);
 }
 .art-2 {
-  background: #ece9f7;
+  background: var(--art-2);
 }
 .item-copy {
   padding: 20px;
 }
 .item-type {
-  color: #83a4a0;
+  color: var(--eyebrow-soft);
   font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.15em;
@@ -362,7 +362,7 @@ body {
 .item-copy > p:not(.item-type) {
   min-height: 42px;
   margin: 8px 0 18px;
-  color: #8190a0;
+  color: var(--text-subtle);
   font-size: 13px;
   line-height: 1.5;
 }
@@ -373,14 +373,14 @@ body {
   gap: 8px;
 }
 .item-buy strong {
-  color: #876321;
+  color: var(--price);
   font-size: 14px;
   white-space: nowrap;
 }
 .soft-button {
   padding: 10px 12px;
-  color: #376a70;
-  background: #e8f3ef;
+  color: var(--soft-button-fg);
+  background: var(--soft-button-bg);
   font-size: 12px;
 }
 .soft-button:disabled {
@@ -392,27 +392,27 @@ body {
   margin: 0 auto 18px;
   padding: 12px 15px;
   border-radius: 12px;
-  color: #356964;
-  background: #e8f5ef;
+  color: var(--notice-fg);
+  background: var(--notice-bg);
   font-size: 14px;
 }
 .notice.error {
-  color: #9a4e4e;
-  background: #fff0ed;
+  color: var(--notice-error-fg);
+  background: var(--notice-error-bg);
 }
 .empty {
   grid-column: 1/-1;
   padding: 45px;
-  color: #8290a1;
+  color: var(--text-subtle);
   text-align: center;
 }
 .inventory-panel {
   max-width: 1120px;
   margin: 24px auto 0;
   padding: 24px;
-  border: 1px solid #e6ecec;
+  border: 1px solid var(--card-border);
   border-radius: 22px;
-  background: #fff;
+  background: var(--card-bg);
 }
 .inventory-panel h2 {
   margin: 0 0 16px;
@@ -429,14 +429,11 @@ body {
   gap: 10px;
   padding: 10px;
   border-radius: 12px;
-  background: #f6f9f8;
+  background: var(--inventory-item-bg);
 }
 .inventory-item strong {
   flex: 1;
   font-size: 13px;
-}
-.room-scene {
-  background: #d9eff0;
 }
 .room-art {
   position: absolute;
@@ -446,6 +443,7 @@ body {
   object-fit: cover;
   user-select: none;
   pointer-events: none;
+  filter: var(--room-art-filter);
 }
 .placed-item {
   width: clamp(42px, 8vw, 75px);
@@ -472,9 +470,9 @@ body {
   width: clamp(54px, 10vw, 90px);
   height: clamp(54px, 10vw, 90px);
   transform: translate(-50%, -50%);
-  border: 2px dashed #426e91;
+  border: 2px dashed var(--primary-bg);
   border-radius: 50%;
-  background: rgb(66 110 145 / 0.14);
+  background: color-mix(in srgb, var(--primary-bg) 14%, transparent);
   pointer-events: none;
 }
 .inventory-item img {
@@ -489,7 +487,12 @@ body {
 }
 .skeleton {
   height: 350px;
-  background: linear-gradient(100deg, #fff 30%, #f1f5f5 50%, #fff 70%);
+  background: linear-gradient(
+    100deg,
+    var(--skeleton-base) 30%,
+    var(--skeleton-shine) 50%,
+    var(--skeleton-base) 70%
+  );
   background-size: 200% 100%;
   animation: shimmer 1.3s infinite;
 }
@@ -502,9 +505,6 @@ body {
   .play-page {
     padding-left: 18px;
     padding-right: 18px;
-  }
-  .play-header {
-    height: 66px;
   }
   .home-layout {
     grid-template-columns: 1fr;
@@ -558,126 +558,7 @@ body {
   .soft-button {
     width: auto;
   }
-  .coin-pill {
-    padding: 8px 11px;
-    font-size: 12px;
-  }
-  .brand {
-    font-size: 17px;
-  }
   .play-page {
     padding-bottom: 48px;
   }
-}
-
-/* Dark mode: Nuxt UI puts the `dark` class on <html>. */
-html.dark {
-  color: #e2e8f0;
-  background: #0f172a;
-}
-html.dark body {
-  background: #0f172a;
-  color: #e2e8f0;
-}
-.dark .play-page {
-  color: #e2e8f0;
-  background: radial-gradient(ellipse at 80% 0%, #16304a 0, transparent 35%), #0f172a;
-}
-.dark .play-header,
-.dark .site-header {
-  border-bottom-color: #26354d;
-}
-.dark .header-link,
-.dark .back-link {
-  color: #8fc1e3;
-}
-.dark .theme-toggle {
-  border-color: #334155;
-  background: #1e293b;
-  color: #fcd34d;
-}
-.dark .brand {
-  color: #9fd0ea;
-}
-.dark .coin-pill {
-  background: #3a2f12;
-  color: #f6d98a;
-  border-color: #6b551d;
-}
-.dark .welcome h1,
-.dark .page-intro h1 {
-  color: #f1f5f9;
-}
-.dark .welcome > p:last-child,
-.dark .page-intro > p:last-child {
-  color: #94a3b8;
-}
-.dark .eyebrow {
-  color: #7fc4bd;
-}
-.dark .room-card,
-.dark .side-card,
-.dark .shop-card,
-.dark .inventory-panel {
-  border-color: #26354d;
-  background: #1e293b;
-  box-shadow: 0 16px 40px #00000040;
-}
-.dark .room-scene {
-  background: #1c3a45;
-  border-color: #334155;
-  box-shadow: inset 0 0 0 1px #26354d;
-}
-.dark .room-art {
-  filter: brightness(0.72) saturate(0.9);
-}
-.dark .room-message {
-  color: #f1e3d8;
-  text-shadow: 0 1px 4px #000a;
-}
-.dark .primary-button {
-  background: #5a95bf;
-  color: #0b1220;
-}
-.dark .side-card > p:not(.eyebrow),
-.dark .item-copy > p:not(.item-type),
-.dark .empty {
-  color: #94a3b8;
-}
-.dark .soft-side {
-  background: #1b3a36;
-}
-.dark .item-art {
-  background: #1d3a42;
-}
-.dark .art-1 {
-  background: #3a3220;
-}
-.dark .art-2 {
-  background: #2c2a47;
-}
-.dark .item-type {
-  color: #7fc4bd;
-}
-.dark .item-buy strong {
-  color: #f6d98a;
-}
-.dark .soft-button {
-  color: #a7e0da;
-  background: #264a49;
-}
-.dark .notice {
-  color: #a7e8d8;
-  background: #173d38;
-}
-.dark .notice.error {
-  color: #fca5a5;
-  background: #43201f;
-}
-.dark .inventory-item {
-  background: #263449;
-}
-.dark .skeleton {
-  background: linear-gradient(100deg, #1e293b 30%, #2b3a52 50%, #1e293b 70%);
-  background-size: 200% 100%;
 }

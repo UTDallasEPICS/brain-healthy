@@ -9,7 +9,21 @@
     return section ? section.charAt(0).toUpperCase() + section.slice(1) : 'Home'
   })
 
-  const { data: coins } = await useFetch('/api/coins/balance', { key: 'coin-balance' })
+  // Loads the shared balance (see composables/useCoinBalance.ts). The header
+  // stays mounted across pages, so re-read it on every navigation too.
+  const { refresh: refreshBalance } = await useFetch<{ balance: number }>('/api/coins/balance', {
+    key: COIN_BALANCE_KEY,
+  })
+  const { balance } = useCoinBalance()
+  watch(
+    () => route.fullPath,
+    () => refreshBalance()
+  )
+
+  // Shared look for the round header buttons (test console, theme, shop) so
+  // they all get the same pointer cursor and hover lift.
+  const iconButton =
+    'border-outline bg-surface text-fg grid size-10 cursor-pointer place-items-center rounded-full border-2 transition-transform hover:-translate-y-0.5'
 
   function toggleTheme() {
     colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'
@@ -19,28 +33,18 @@
 <template>
   <header class="mx-auto flex w-full max-w-[1120px] items-center gap-2 px-4 pt-5 pb-3">
     <h1
-      class="border-ink text-ink min-w-30 rounded-md border-2 bg-[#f1f1f4] px-4 py-1.5 text-center text-xl shadow-[2px_3px_0_rgba(30,42,90,0.25)]"
+      class="border-outline text-fg bg-surface-title min-w-30 rounded-md border-2 px-4 py-1.5 text-center text-xl shadow-[2px_3px_0_var(--color-shadow)]"
     >
       {{ title }}
     </h1>
 
     <div class="flex-1" />
 
-    <NuxtLink
-      v-if="isDev"
-      to="/dev/economy"
-      aria-label="Test console"
-      class="border-ink bg-cream text-ink grid size-10 place-items-center rounded-full border-2"
-    >
+    <NuxtLink v-if="isDev" to="/dev/economy" aria-label="Test console" :class="iconButton">
       <UIcon name="i-lucide-flask-conical" class="size-5" />
     </NuxtLink>
 
-    <button
-      type="button"
-      aria-label="Toggle Theme"
-      class="border-ink bg-cream text-ink grid size-10 place-items-center rounded-full border-2"
-      @click="toggleTheme"
-    >
+    <button type="button" aria-label="Toggle Theme" :class="iconButton" @click="toggleTheme">
       <ClientOnly>
         <UIcon
           :name="colorMode.value === 'dark' ? 'i-lucide-moon' : 'i-lucide-sun'"
@@ -52,20 +56,17 @@
       </ClientOnly>
     </button>
 
-    <NuxtLink
-      to="/shop"
-      aria-label="Shop"
-      class="border-ink bg-cream text-ink grid size-10 place-items-center rounded-full border-2 transition-transform hover:-translate-y-0.5"
-    >
+    <NuxtLink to="/shop" aria-label="Shop" :class="iconButton">
       <UIcon name="i-lucide-store" class="size-6" />
     </NuxtLink>
 
     <div
-      class="border-ink bg-cream text-ink flex items-center gap-1.5 rounded-full border-2 py-1.5 pr-3 pl-2 font-bold tabular-nums"
-      :aria-label="`${coins?.balance ?? 0} coins`"
+      class="border-outline bg-surface text-fg flex items-center gap-1.5 rounded-full border-2 py-1.5 pr-3 pl-2 font-bold whitespace-nowrap tabular-nums"
+      :aria-label="formatCoins(balance)"
+      data-testid="coin-balance"
     >
       <UIcon name="i-lucide-piggy-bank" class="text-blush size-6" />
-      {{ coins?.balance ?? 0 }}
+      {{ formatCoins(balance) }}
     </div>
   </header>
 </template>
